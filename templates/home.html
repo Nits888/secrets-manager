@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AmethystKey - Secret Management Home</title>
+    <style>
+        /* CSS styles as before */
+
+        /* ... */
+
+        /* Highlight searched keyword */
+        .highlight {
+            background-color: yellow;
+        }
+
+        /* Improved styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #444;
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        .collapsible {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .collapsible::after {
+            content: '\25B6';
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .active::after {
+            content: '\25BC';
+        }
+
+        .content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+
+        .active .content {
+            max-height: 1000px; /* Adjust this value to show more content when expanded */
+        }
+
+        .search-container {
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .search-container input[type=text] {
+            padding: 10px;
+            margin-right: 10px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="background-color: #444; color: #fff; padding: 20px;">
+        <h1>AmethystKey - CRYSTAL Secret Management Home</h1>
+        <p>AmethystKey is your secret management service. It combines the allure of amethyst, a captivating gemstone,
+            with the idea of securely safeguarding valuable keys or secrets.</p>
+    </div>
+
+    <h2>Secrets</h2>
+    {% for bucket, secrets in secrets.items() %}
+    <div class="collapsible" onclick="toggleCollapse(event)">
+        <h3>{{ bucket }}</h3>
+    </div>
+    <div class="content">
+        <table>
+            <tr>
+                <th>Secret Name</th>
+            </tr>
+            {% for secret in secrets %}
+            <tr>
+                <td>{{ secret }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+
+    <script>
+        function toggleCollapse(event) {
+            event.currentTarget.classList.toggle('active');
+            var content = event.currentTarget.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        }
+    </script>
+</body>
+
+</html>

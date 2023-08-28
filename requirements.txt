@@ -1,0 +1,8 @@
+cryptography
+Flask
+Flask_HTTPAuth
+flask_restx
+psycopg2_binary
+waitress
+sphinx-autoapi
+pydata_sphinx_theme
