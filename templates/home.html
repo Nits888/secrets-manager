@@ -1,138 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AmethystKey - Secret Management Home</title>
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+
     <style>
-        /* CSS styles as before */
-
-        /* ... */
-
         /* Highlight searched keyword */
         .highlight {
             background-color: yellow;
-        }
-
-        /* Improved styles */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f7f7f7;
-            color: #333;
-        }
-
-        h1 {
-            font-size: 36px;
-            margin-bottom: 10px;
-        }
-
-        h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #444;
-            color: #fff;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        tr:hover {
-            background-color: #ddd;
-        }
-
-        .collapsible {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-        }
-
-        .collapsible::after {
-            content: '\25B6';
-            margin-left: 5px;
-            font-size: 12px;
-        }
-
-        .active::after {
-            content: '\25BC';
-        }
-
-        .content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.2s ease-out;
-        }
-
-        .active .content {
-            max-height: 1000px; /* Adjust this value to show more content when expanded */
-        }
-
-        .search-container {
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-
-        .search-container input[type=text] {
-            padding: 10px;
-            margin-right: 10px;
-            width: 200px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
         }
     </style>
 </head>
 
 <body>
-    <div style="background-color: #444; color: #fff; padding: 20px;">
-        <h1>AmethystKey - CRYSTAL Secret Management Home</h1>
-        <p>AmethystKey is your secret management service. It combines the allure of amethyst, a captivating gemstone,
-            with the idea of securely safeguarding valuable keys or secrets.</p>
+    <!-- Main container -->
+    <div class="container-fluid bg-dark text-white py-5">
+        <h1 class="text-center">AmethystKey - CRYSTAL Secret Management Home</h1>
+        <p class="text-center">AmethystKey is your secret management service. It combines the allure of amethyst, a captivating gemstone, with the idea of securely safeguarding valuable keys or secrets.</p>
     </div>
 
-    <h2>Secrets</h2>
-    {% for bucket, secrets in secrets.items() %}
-    <div class="collapsible" onclick="toggleCollapse(event)">
-        <h3>{{ bucket }}</h3>
-    </div>
-    <div class="content">
-        <table>
-            <tr>
-                <th>Secret Name</th>
-            </tr>
-            {% for secret in secrets %}
-            <tr>
-                <td>{{ secret }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% endfor %}
+    <!-- Secrets container -->
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Secrets</h2>
 
+            <!-- Create Bucket functionality -->
+            <div class="d-flex">
+                <input type="text" id="bucketNameInput" placeholder="Enter bucket name" class="form-control">
+                <button id="createBucketBtn" class="btn btn-primary ml-2">Create Bucket</button>
+            </div>
+        </div>
+
+        {% for bucket, secrets in secrets.items() %}
+        <!-- Collapsible bucket -->
+        <div class="card mb-2">
+            <div class="card-header" data-toggle="collapse" href="#{{ bucket }}-secrets">
+                <h3 class="mb-0">{{ bucket }}</h3>
+            </div>
+            <div id="{{ bucket }}-secrets" class="collapse">
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Secret Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for secret in secrets %}
+                            <tr>
+                                <td>{{ secret }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Include Bootstrap's JS & jQuery -->
+    <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+
+
+    <!-- AJAX for bucket creation -->
     <script>
-        function toggleCollapse(event) {
-            event.currentTarget.classList.toggle('active');
-            var content = event.currentTarget.nextElementSibling;
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
+    $('#createBucketBtn').on('click', function() {
+    let bucketName = $('#bucketNameInput').val().trim();
+
+    // Validate bucket name
+    if(!bucketName) {
+        alert("Please enter a bucket name!");
+        return;
+    }
+
+    // AJAX call to your endpoint
+    $.ajax({
+        url: "/create_bucket/",
+        type: "POST",
+        data: JSON.stringify({ bucket: bucketName }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function(data) {
+            if (data.message) {
+                alert("Bucket '" + bucketName + "' created successfully! An email has been sent to the owner.");
+                // Refresh page to show the new bucket
+                location.reload();
             } else {
-                content.style.maxHeight = content.scrollHeight + "px";
+                alert("Error creating bucket: " + data.error);
             }
+        },
+        error: function(xhr, status, error) {
+            alert("An error occurred: " + xhr.responseText);
         }
+    });
+});
+
     </script>
 </body>
 
