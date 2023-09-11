@@ -1,8 +1,11 @@
 cryptography
-Flask
+Flask~=2.3.3
 Flask_HTTPAuth
 flask_restx
 psycopg2_binary
 waitress
 sphinx-autoapi
 pydata_sphinx_theme
+PyJWT
+jwt
+requests

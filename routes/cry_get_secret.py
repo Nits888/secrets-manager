@@ -1,23 +1,58 @@
+from flask import g
 from flask_restx import Namespace, Resource
+from http import HTTPStatus
+import logging
 
-from globals import auth_parser
+from globals import auth_parser, LOG_LEVEL
 from modules import cry_secrets_management
+from modules.cry_auth import auth
 
-ns = Namespace('get_secret', description='Get Secret Route Namespace')
+logging.basicConfig(level=LOG_LEVEL)
+
+ns = Namespace('get_secret', description='Namespace for fetching stored secrets.')
 
 
-@ns.route('/get_secret/<string:bucket>/<string:service_name>')
+@ns.route('/<string:bucket>/<string:secret_name>')
 class GetSecret(Resource):
+    """
+    Resource to fetch the secret for a given bucket and secret name.
+    """
+
+    @auth.login_required
+    @ns.expect(auth_parser, params={'bucket': 'Name of the bucket', 'secret_name': 'Name of the secret'}, validate=True)
     @ns.doc(security='apikey')
-    @ns.doc(auth_parser, params={'bucket': 'Bucket name', 'service_name': 'Service name'})
-    @ns.doc(responses={200: 'Secret retrieved successfully.', 404: 'Bucket or secret not found.'})
-    def get(self, bucket, service_name):
+    @ns.response(HTTPStatus.OK, 'Secret successfully retrieved.')
+    @ns.response(HTTPStatus.NOT_FOUND, 'Bucket or secret not found.')
+    @ns.response(HTTPStatus.UNAUTHORIZED, 'Unauthorized access.')
+    @ns.response(HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal server error encountered.')
+    def get(self, bucket, secret_name):
+        """
+        GET method to retrieve the secret for the specified bucket and secret name.
+
+        :param bucket: Name of the bucket containing the secret.
+        :param secret_name: Name of the secret to retrieve.
+        :return: A JSON response containing the secret or an error message.
+        """
+        if not hasattr(g, 'bucket_name'):
+            logging.error("bucket_name not found in global context. Token might not be set properly.")
+            return {'message': 'Unauthorized access.'}, HTTPStatus.UNAUTHORIZED
+
+        if g.bucket_name != bucket:
+            return {'message': 'Unauthorized access to this bucket.'}, HTTPStatus.UNAUTHORIZED
+
         try:
-            if (cry_secrets_management.bucket_exists(bucket) and
-                    cry_secrets_management.secret_exists(bucket, service_name)):
-                secret = cry_secrets_management.retrieve_secret(bucket, service_name)
-                return {'secret': secret}, 200
-            else:
-                return {'message': f"Bucket '{bucket}' or secret '{service_name}' not found."}, 404
+            if not cry_secrets_management.bucket_exists(bucket):
+                logging.warning(f"Bucket '{bucket}' not found when trying to fetch secret.")
+                return {'message': f"Bucket '{bucket}' not found."}, HTTPStatus.NOT_FOUND
+
+            if not cry_secrets_management.secret_exists(bucket, secret_name):
+                logging.warning(f"Secret for '{secret_name}' not found in bucket '{bucket}'.")
+                return {'message': f"Secret for '{secret_name}' not found in bucket '{bucket}'."}, HTTPStatus.NOT_FOUND
+
+            secret = cry_secrets_management.retrieve_secret(bucket, secret_name)
+            logging.info(f"Successfully fetched secret for '{secret_name}' from bucket '{bucket}'.")
+            return {'secret': secret}, HTTPStatus.OK
+
         except Exception as e:
-            return {'error': str(e)}, 500
+            logging.error(f"Error encountered while fetching secret: {str(e)}")
+            return {'error': 'Internal server error'}, HTTPStatus.INTERNAL_SERVER_ERROR

@@ -1,0 +1,7 @@
+{
+    "bucket_name": "platform",
+    "allowed_ips": [
+        "127.0.0.1",
+        "0.0.0.0"
+    ]
+}

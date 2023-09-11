@@ -1,53 +1,79 @@
+from flask import g
 from flask_restx import Namespace, Resource, fields
+from http import HTTPStatus
+import logging
 
-from globals import auth_parser
+from globals import auth_parser, LOG_LEVEL
 from modules import cry_secrets_management
 from modules.cry_auth import auth
 
-ns = Namespace('create_secret', description='Create Secret Route Namespace')
+# Initialize logging with the specified log level from globals
+logging.basicConfig(level=LOG_LEVEL)
 
-# Model for secret data in request payload
+ns = Namespace('create_secret', description='Secrets Management Route Namespace')
+
+# Define the model for the secret data in the request payload
 secret_model = ns.model('Secret', {
     'bucket': fields.String(required=True, description='Bucket name'),
-    'service_name': fields.String(required=True, description='Service name'),
+    'secret_name': fields.String(required=True, description='Secret name'),
     'secret': fields.String(required=True, description='The secret data')
 })
 
 
-@ns.route('/create_secret')
-class CreateSecret(Resource):
+@ns.route('/')
+class SecretResource(Resource):
+    """
+    Resource class for secrets management. Provides an endpoint for creating secrets.
+    """
+
+    @auth.login_required
     @ns.expect(auth_parser, secret_model, validate=True)
     @ns.doc(security='apikey')
     @ns.doc(
-        responses={200: 'Secret created successfully.', 400: 'Invalid data provided.', 409: 'Secret already exists.'})
+        responses={
+            HTTPStatus.OK: 'Secret created successfully.',
+            HTTPStatus.BAD_REQUEST: 'Invalid data provided.',
+            HTTPStatus.CONFLICT: 'Secret already exists.',
+            HTTPStatus.INTERNAL_SERVER_ERROR: 'Internal server error.'
+        })
     def post(self):
-        # Parse the Authorization header to extract the token
-        args = auth_parser.parse_args()
-        auth_header = args['Authorization']
-        if not auth_header.startswith('Bearer '):
-            return {'message': 'Invalid token format. Use "Bearer <token>".'}, 401
-
-        token = auth_header[7:]  # Remove 'Bearer ' to get the token value
-
-        # Verify the token using the provided authentication logic
-        if not auth.verify_token(token):
-            return {'message': 'Invalid token or unauthorized.'}, 401
-
+        """
+        Endpoint to store a new secret. Requires bucket name, secret name, and the secret data.
+        Returns a JSON response indicating the result of the operation.
+        """
         data = ns.payload
         bucket = data.get('bucket')
-        service_name = data.get('service_name')
+        secret_name = data.get('secret_name')
+
+        # Check if bucket_name attribute exists in the g object
+        if not hasattr(g, 'bucket_name'):
+            logging.error("bucket_name not found in global context. Token might not be set properly.")
+            return {'message': 'Unauthorized access.'}, HTTPStatus.UNAUTHORIZED
+
+        # Check if the authenticated user's token bucket matches the bucket in the request
+        if g.bucket_name != bucket:
+            return {'message': 'Unauthorized access to this bucket.'}, HTTPStatus.UNAUTHORIZED
+
         secret = data.get('secret')
-        try:
-            # Check if the bucket exists
-            if not cry_secrets_management.bucket_exists(bucket):
-                return {'message': f"Bucket '{bucket}' not found."}, 404
+        logging.info(f"Attempting to create secret: {secret_name} in bucket: {bucket}.")
+        return create_secret(bucket, secret_name, secret)
 
-            # Check if the service_name already exists in the bucket
-            if cry_secrets_management.secret_exists(bucket, service_name):
-                return {'message': f"Secret '{service_name}' already exists in bucket '{bucket}'."}, 409
 
-            # Store the secret if the bucket and service_name exist and secret is not already present
-            cry_secrets_management.store_secret(bucket, service_name, secret.encode())  # Convert secret to bytes
-            return {'message': f"Secret for '{service_name}' created successfully in '{bucket}'."}, 200
-        except Exception as e:
-            return {'error': str(e)}, 500
+def create_secret(bucket, secret_name, secret):
+    """
+    Helper function to create a new secret in the system.
+    """
+    # Check if the specified bucket exists
+    if not cry_secrets_management.bucket_exists(bucket):
+        logging.warning(f"Bucket '{bucket}' not found when trying to create a secret.")
+        return {'message': f"Bucket '{bucket}' not found."}, HTTPStatus.NOT_FOUND
+
+    # Check if a secret with the specified name already exists in the bucket
+    if cry_secrets_management.secret_exists(bucket, secret_name):
+        logging.warning(f"Secret '{secret_name}' already exists in bucket '{bucket}'.")
+        return {'message': f"Secret '{secret_name}' already exists in bucket '{bucket}'."}, HTTPStatus.CONFLICT
+
+    # Store the secret in the specified bucket with the given name
+    cry_secrets_management.store_secret(bucket, secret_name, secret.encode())
+    logging.info(f"Secret for '{secret_name}' created successfully in '{bucket}'.")
+    return {'message': f"Secret for '{secret_name}' created successfully in '{bucket}'."}, HTTPStatus.OK

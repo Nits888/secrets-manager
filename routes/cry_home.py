@@ -1,12 +1,20 @@
 from flask import render_template, make_response
 from flask_restx import Resource, Namespace
+import logging
+from globals import LOG_LEVEL
 from modules import cry_secrets_management
+
+logging.basicConfig(level=LOG_LEVEL)
 
 ns = Namespace('home', description='Home Route Namespace')
 
 
-@ns.route('/', doc=False)  # Add doc=False here to exclude from Swagger
+@ns.route('/', doc=False)  # Exclude from Swagger UI
 class Home(Resource):
+    """
+    Resource to serve the home page. This displays a list of buckets and their corresponding secrets.
+    """
+
     @staticmethod
     def get():
         try:
@@ -22,7 +30,9 @@ class Home(Resource):
             # Create a response with the correct Content-Type header
             response = make_response(html_content)
             response.headers['Content-Type'] = 'text/html'
-
+            logging.info("Successfully rendered home page with list of buckets and secrets.")
             return response
+
         except Exception as e:
-            return {'error': str(e)}, 500
+            logging.error(f"Error encountered while rendering home page: {str(e)}")
+            return {'error': 'Internal server error'}, 500

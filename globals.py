@@ -3,6 +3,11 @@ import os
 
 from flask_restx import reqparse
 
+import logging
+
+# Define the global logging level
+LOG_LEVEL = logging.DEBUG
+
 bucket_cache = {}
 
 # Global Variables
