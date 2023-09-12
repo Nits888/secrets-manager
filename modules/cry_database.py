@@ -58,22 +58,23 @@ def create_dml_connection_pool():
 create_dml_connection_pool()  # Initialize the pool at startup
 
 
-def backup_keys(bucket, combined_key_salt, client_id):
+def backup_keys(bucket, combined_key_salt, client_id, app_name):
     """Backup encryption keys and related data into the database.
 
     Args:
         bucket (str): Bucket name.
         combined_key_salt (str): Combined encryption key and salt.
         client_id (str): Client ID.
+        app_name (str) : Application Name
 
     Raises:
         Exception: If any issue occurs during the backup process.
     """
     try:
         with BACKUP_POOL.getconn() as conn, conn.cursor() as cur:
-            query = ("INSERT INTO bucket_keys (bucket_name, encryption_key_salt, client_id) "
-                     "VALUES (%s, %s, %s);")
-            cur.execute(query, (bucket, combined_key_salt, client_id))
+            query = ("INSERT INTO bucket_keys (app_name, bucket_name, encryption_key_salt, client_id) "
+                     "VALUES (%s, %s, %s, %s);")
+            cur.execute(query, (app_name, bucket, combined_key_salt, client_id))
             conn.commit()
     except Exception as e:
         logging.error(f"Error backing up keys: {e}")
@@ -111,13 +112,13 @@ def sync_keys():
     """
     try:
         with BACKUP_POOL.getconn() as conn, conn.cursor() as cur:
-            query = "SELECT bucket_name, encryption_key_salt FROM bucket_keys;"
+            query = "SELECT app_name, bucket_name, encryption_key_salt FROM bucket_keys;"
             cur.execute(query)
             keys = cur.fetchall()
 
             for key in keys:
-                bucket_name, encryption_key_salt = key
-                bucket_directory = os.path.join(SECRETS_DIR, bucket_name)
+                app_name, bucket_name, encryption_key_salt = key
+                bucket_directory = os.path.join(SECRETS_DIR, app_name, bucket_name)
                 if not os.path.exists(bucket_directory):
                     os.makedirs(bucket_directory)
                 key_file_path = os.path.join(bucket_directory, "secret.key")
@@ -139,7 +140,7 @@ def initialize_buckets_and_keys_from_db():
             # Use a cursor to execute the query and fetch results
             with connection.cursor() as cursor:
                 # Execute the SELECT query to fetch bucket names and keys
-                query = "SELECT bucket_name, encryption_key_salt FROM bucket_keys;"
+                query = "SELECT app_name, bucket_name, encryption_key_salt FROM bucket_keys;"
                 cursor.execute(query)
 
                 # Fetch the combined list of bucket names and keys
@@ -153,13 +154,14 @@ def initialize_buckets_and_keys_from_db():
         return []  # Return an empty list in case of any error
 
 
-def save_secret(bucket_name, secret_name, encrypted_secret):
+def save_secret(bucket_name, secret_name, encrypted_secret, app_name):
     """Save or update a secret in the database.
 
     Args:
         bucket_name (str): The name of the bucket.
         secret_name (str): The name of the secret.
         encrypted_secret (bytes): The encrypted secret data.
+        app_name (str): Application Name
 
     Raises:
         Exception: If an error occurs during database operations.
@@ -171,13 +173,13 @@ def save_secret(bucket_name, secret_name, encrypted_secret):
             with conn.cursor() as cur:
                 # Prepare the query to insert or update the encrypted_secret into the secrets table
                 query = """
-                    INSERT INTO secrets (bucket_name, secret_name, encrypted_secret) 
-                    VALUES (%s, %s, %s) 
-                    ON CONFLICT (bucket_name, secret_name) 
+                    INSERT INTO secrets (app_name, bucket_name, secret_name, encrypted_secret) 
+                    VALUES (%s, %s, %s, %s) 
+                    ON CONFLICT (app_name, bucket_name, secret_name) 
                     DO UPDATE SET encrypted_secret = EXCLUDED.encrypted_secret;
                 """
                 # Execute the query to insert or update the encrypted_secret
-                cur.execute(query, (bucket_name, secret_name, psycopg2.Binary(encrypted_secret)))
+                cur.execute(query, (app_name, bucket_name, secret_name, psycopg2.Binary(encrypted_secret)))
                 # Commit the changes to the database
                 conn.commit()
 
@@ -189,13 +191,14 @@ def save_secret(bucket_name, secret_name, encrypted_secret):
         raise e  # Re-raise the exception to allow potential handling by the caller
 
 
-def update_secret(bucket_name, secret_name, encrypted_secret):
+def update_secret(bucket_name, secret_name, encrypted_secret, app_name):
     """Update a secret in the database.
 
     Args:
         bucket_name (str): The name of the bucket.
         secret_name (str): The name of the secret.
         encrypted_secret (bytes): The updated encrypted secret data.
+        app_name (str): Application Name
 
     Raises:
         Exception: If an error occurs during database operations.
@@ -206,9 +209,9 @@ def update_secret(bucket_name, secret_name, encrypted_secret):
                 query = """
                     UPDATE secrets 
                     SET encrypted_secret = %s 
-                    WHERE bucket_name = %s AND secret_name = %s;
+                    WHERE app_name = %s AND bucket_name = %s AND secret_name = %s;
                 """
-                cur.execute(query, (psycopg2.Binary(encrypted_secret), bucket_name, secret_name))
+                cur.execute(query, (psycopg2.Binary(encrypted_secret), app_name, bucket_name, secret_name))
                 conn.commit()
 
     except Exception as e:
@@ -217,12 +220,13 @@ def update_secret(bucket_name, secret_name, encrypted_secret):
         raise e
 
 
-def delete_secret(bucket_name, secret_name):
+def delete_secret(bucket_name, secret_name, app_name):
     """Delete a secret from the database.
 
     Args:
         bucket_name (str): The name of the bucket.
         secret_name (str): The name of the secret.
+        app_name(str) : The Application name of the Bucket.
 
     Raises:
         Exception: If an error occurs during database operations.
@@ -232,9 +236,9 @@ def delete_secret(bucket_name, secret_name):
             with conn.cursor() as cur:
                 query = """
                     DELETE FROM secrets 
-                    WHERE bucket_name = %s AND secret_name = %s;
+                    WHERE app_name = %s AND bucket_name = %s AND secret_name = %s;
                 """
-                cur.execute(query, (bucket_name, secret_name))
+                cur.execute(query, (app_name, bucket_name, secret_name))
                 conn.commit()
 
     except Exception as e:
@@ -259,7 +263,7 @@ def get_all_secrets(batch_size=1000):
     try:
         with BACKUP_POOL.getconn() as conn:
             with conn.cursor() as cur:
-                query = "SELECT bucket_name, secret_name, encrypted_secret FROM secrets;"
+                query = "SELECT app_name, bucket_name, secret_name, encrypted_secret FROM secrets;"
                 cur.execute(query)
 
                 batch = cur.fetchmany(batch_size)
@@ -286,7 +290,7 @@ def get_all_buckets():
     try:
         with BACKUP_POOL.getconn() as conn:
             with conn.cursor() as cur:
-                query = "SELECT bucket_name, encryption_key_salt, client_id FROM bucket_keys;"
+                query = "SELECT app_name, bucket_name, encryption_key_salt, client_id FROM bucket_keys;"
                 cur.execute(query)
                 result = cur.fetchall()
 

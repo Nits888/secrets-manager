@@ -1,0 +1,13 @@
+<svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+    <!-- Outer Shape -->
+    <polygon points="200,10 390,200 200,390 10,200" fill="purple"/>
+
+    <!-- Light Reflections to give some gem-like appearance -->
+    <polygon points="200,10 260,200 200,120" fill="#b19cd9"/>
+    <polygon points="200,10 140,200 200,120" fill="#b19cd9"/>
+    <polygon points="10,200 120,200 200,120" fill="#b19cd9"/>
+    <polygon points="390,200 280,200 200,120" fill="#b19cd9"/>
+
+    <!-- Text -->
+    <text x="200" y="270" font-family="Verdana" font-size="40" fill="white" text-anchor="middle">AmethystKey</text>
+</svg>

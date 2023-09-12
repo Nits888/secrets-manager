@@ -1,0 +1,63 @@
+body {
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container-fluid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column; /* Stack children vertically */
+    position: relative;
+}
+
+#themeToggleIcon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+img[alt="AmethystKey Logo"] {
+    margin: 10px;
+}
+
+[data-theme="dark"] {
+    background-color: #333;
+    color: #f4f4f4;
+}
+
+[data-theme="dark"] .bg-dark {
+    background-color: #222 !important;
+}
+
+[data-theme="dark"] .text-white,
+[data-theme="dark"] .table-bordered th,
+[data-theme="dark"] .table-bordered td {
+    color: #f4f4f4 !important;
+}
+
+[data-theme="dark"] .card {
+    background-color: #444;
+    color: #eee;
+    border-color: #444;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: #444;
+    color: #eee;
+}
+
+[data-theme="dark"] .btn-info {
+    background-color: #666 !important;
+    border-color: #555 !important;
+}
+
+[data-theme="dark"] .table-bordered,
+[data-theme="dark"] .table-bordered th,
+[data-theme="dark"] .table-bordered td {
+    border-color: #555 !important;
+}
+
+

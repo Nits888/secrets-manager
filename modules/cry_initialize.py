@@ -78,20 +78,42 @@ def _handle_missing_key(bucket_name, key_salt_file_path):
 
 def create_bucket_directories_keys():
     """
-    Create directories for each bucket and handle the associated encryption keys.
+    Create directories for each app and bucket and handle the associated encryption keys.
 
-    For each bucket, ensure that the directory exists and then manage its encryption key.
+    For each app and its buckets, ensure that the directories exist and then manage its encryption key.
     """
-    for bucket_name in BUCKETS:
-        bucket_path = _create_directory_if_not_exists(os.path.join(SECRETS_DIR, bucket_name),
-                                                      f"Creating Bucket Directory for: {bucket_name}")
-        key_file_path = os.path.join(bucket_path, 'secret.key')
-        if not os.path.exists(key_file_path):
-            encryption_key = BUCKET_KEYS.get(bucket_name, {}).get('encryption_key')
-            if encryption_key is None:
-                _handle_missing_key(bucket_name, key_file_path)
-            else:
-                _write_existing_key_to_file(bucket_name, key_file_path, encryption_key)
+    for app_name, bucket_dict in BUCKETS.items():
+        app_path = _create_directory_if_not_exists(os.path.join(SECRETS_DIR, app_name),
+                                                   f"Creating App Directory for: {app_name}")
+        for bucket_name in bucket_dict.keys():
+            bucket_path = _create_directory_if_not_exists(os.path.join(app_path, bucket_name),
+                                                          f"Creating Bucket Directory for: {bucket_name}")
+            key_file_path = os.path.join(bucket_path, 'secret.key')
+            if not os.path.exists(key_file_path):
+                encryption_key = BUCKET_KEYS.get(app_name, {}).get(bucket_name, {}).get('encryption_key')
+                if encryption_key is None:
+                    _handle_missing_key(bucket_name, key_file_path)
+                else:
+                    _write_existing_key_to_file(bucket_name, key_file_path, encryption_key)
+
+
+def initialize_buckets(app_bucket_keys_list):
+    """
+    Initialize apps and buckets with their associated encryption keys.
+
+    Parameters:
+    - app_bucket_keys_list (list): List of tuples containing app names, bucket names and their associated encryption keys.
+    """
+    for app_name, bucket_name, encryption_key in app_bucket_keys_list:
+        if app_name not in BUCKETS:
+            BUCKETS[app_name] = {}
+        BUCKETS[app_name][bucket_name] = []
+
+        if app_name not in BUCKET_KEYS:
+            BUCKET_KEYS[app_name] = {}
+        BUCKET_KEYS[app_name][bucket_name] = {'encryption_key': encryption_key}
+
+    create_bucket_directories_keys()
 
 
 def _write_existing_key_to_file(bucket_name, key_file_path, encryption_key):
@@ -114,27 +136,16 @@ def _write_existing_key_to_file(bucket_name, key_file_path, encryption_key):
         key_file.write(encryption_key)
 
 
-def initialize_buckets(bucket_keys_list):
-    """
-    Initialize buckets with their associated encryption keys.
-
-    Parameters:
-    - bucket_keys_list (list): List of tuples containing bucket names and their associated encryption keys.
-    """
-    for bucket_name, encryption_key in bucket_keys_list:
-        BUCKETS[bucket_name] = []
-        BUCKET_KEYS[bucket_name] = {'encryption_key': encryption_key}
-    create_bucket_directories_keys()
-
-
 def initialize_secrets_from_db():
     """
     Fetch all secrets from the database and create the necessary files on the system for each secret.
     """
     secrets = cry_database.get_all_secrets()
     for secret in secrets:
-        bucket_name, secret_name, encrypted_secret = secret
-        bucket_directory = os.path.join("secrets", bucket_name)
+        app_name, bucket_name, secret_name, encrypted_secret = secret  # Adjusted to receive app_name
+        app_directory = os.path.join("secrets", app_name)
+        _create_directory_if_not_exists(app_directory)  # Ensure app directory exists
+        bucket_directory = os.path.join(app_directory, bucket_name)  # Adjusted to nest bucket inside app directory
         _create_directory_if_not_exists(bucket_directory)
         secret_file_path = os.path.join(bucket_directory, f"{secret_name}.json")
         if not os.path.exists(secret_file_path):
@@ -152,6 +163,6 @@ def initialize_bucket_cache():
     all_buckets = cry_database.get_all_buckets()
     # bucket_cache = {}
     for bucket in all_buckets:
-        bucket_name, _, client_id = bucket
-        bucket_cache[bucket_name] = {'client_id': client_id}
+        app_name, bucket_name, _, client_id = bucket
+        bucket_cache[app_name, bucket_name] = {'client_id': client_id}
     return bucket_cache

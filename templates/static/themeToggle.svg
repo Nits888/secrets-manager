@@ -1,0 +1,6 @@
+<svg id="themeToggleIcon" width="48" height="48" viewBox="0 0 24 24" fill="none">
+        <!-- Sun icon (default) -->
+        <path class="sun-icon" d="M12 4V2M12 22V20M4.22 4.22L2.8 2.8M20.24 20.24L18.83 18.83M2 12H4M20 12H22M4.22 19.78L2.8 21.2M20.24 3.76L18.83 2.35M12 6A6 6 0 0112 18A6 6 0 0112 6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Moon icon (hidden by default) -->
+        <path class="moon-icon" d="M21 12.79A9 9 0 0112.79 21A9 9 0 0121 12.79Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"/>
+</svg>

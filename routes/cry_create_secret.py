@@ -14,6 +14,7 @@ ns = Namespace('create_secret', description='Secrets Management Route Namespace'
 
 # Define the model for the secret data in the request payload
 secret_model = ns.model('Secret', {
+    'app_name': fields.String(required=True, description='Application Name'),
     'bucket': fields.String(required=True, description='Bucket name'),
     'secret_name': fields.String(required=True, description='Secret name'),
     'secret': fields.String(required=True, description='The secret data')
@@ -44,11 +45,16 @@ class SecretResource(Resource):
         data = ns.payload
         bucket = data.get('bucket')
         secret_name = data.get('secret_name')
+        app_name = data.get('app_name')
 
         # Check if bucket_name attribute exists in the g object
         if not hasattr(g, 'bucket_name'):
             logging.error("bucket_name not found in global context. Token might not be set properly.")
             return {'message': 'Unauthorized access.'}, HTTPStatus.UNAUTHORIZED
+
+        # Check if the authenticated user's token app matches the bucket in the request
+        if g.app_name != app_name:
+            return {'message': 'Unauthorized access to this app_name.'}, HTTPStatus.UNAUTHORIZED
 
         # Check if the authenticated user's token bucket matches the bucket in the request
         if g.bucket_name != bucket:
@@ -56,24 +62,24 @@ class SecretResource(Resource):
 
         secret = data.get('secret')
         logging.info(f"Attempting to create secret: {secret_name} in bucket: {bucket}.")
-        return create_secret(bucket, secret_name, secret)
+        return create_secret(bucket, secret_name, secret, app_name)
 
 
-def create_secret(bucket, secret_name, secret):
+def create_secret(bucket, secret_name, secret, app_name):
     """
     Helper function to create a new secret in the system.
     """
     # Check if the specified bucket exists
-    if not cry_secrets_management.bucket_exists(bucket):
+    if not cry_secrets_management.bucket_exists(bucket, app_name):
         logging.warning(f"Bucket '{bucket}' not found when trying to create a secret.")
         return {'message': f"Bucket '{bucket}' not found."}, HTTPStatus.NOT_FOUND
 
     # Check if a secret with the specified name already exists in the bucket
-    if cry_secrets_management.secret_exists(bucket, secret_name):
+    if cry_secrets_management.secret_exists(bucket, secret_name, app_name):
         logging.warning(f"Secret '{secret_name}' already exists in bucket '{bucket}'.")
         return {'message': f"Secret '{secret_name}' already exists in bucket '{bucket}'."}, HTTPStatus.CONFLICT
 
     # Store the secret in the specified bucket with the given name
-    cry_secrets_management.store_secret(bucket, secret_name, secret.encode())
+    cry_secrets_management.store_secret(bucket, secret_name, secret.encode(), app_name)
     logging.info(f"Secret for '{secret_name}' created successfully in '{bucket}'.")
     return {'message': f"Secret for '{secret_name}' created successfully in '{bucket}'."}, HTTPStatus.OK

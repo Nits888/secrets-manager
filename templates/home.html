@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AmethystKey - Secret Management Home</title>
     <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='custom.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-
     <style>
         /* Highlight searched keyword */
         .highlight {
@@ -17,91 +17,177 @@
 </head>
 
 <body>
-    <!-- Main container -->
-    <div class="container-fluid bg-dark text-white py-5">
-        <h1 class="text-center">AmethystKey - CRYSTAL Secret Management Home</h1>
-        <p class="text-center">AmethystKey is your secret management service. It combines the allure of amethyst, a captivating gemstone, with the idea of securely safeguarding valuable keys or secrets.</p>
+<!-- Main container -->
+<div class="container-fluid bg-dark text-white py-5 position-relative"> <!-- Added position-relative -->
+
+    <!-- AmethystKey Logo -->
+    <img src="{{ url_for('static', filename='amethystKeyLogo.svg') }}" alt="AmethystKey Logo" class="position-absolute" style="top: 10px; left: 10px; width: 300px;"> <!-- Adjust width as needed -->
+
+    <!-- Theme Toggle -->
+    <svg id="themeToggleIcon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <!-- Sun icon (default) -->
+        <path class="sun-icon" d="M12 4V2M12 22V20M4.22 4.22L2.8 2.8M20.24 20.24L18.83 18.83M2 12H4M20 12H22M4.22 19.78L2.8 21.2M20.24 3.76L18.83 2.35M12 6A6 6 0 0112 18A6 6 0 0112 6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Moon icon (hidden by default) -->
+        <path class="moon-icon" d="M21 12.79A9 9 0 0112.79 21A9 9 0 0121 12.79Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"/>
+    </svg>
+
+    <h1 class="text-center">AmethystKey - CRYSTAL Secret Management Service</h1>
+    <p class="text-center">It combines the allure of amethyst, a captivating gemstone, with the idea of securely safeguarding valuable keys or secrets.</p>
+    <div class="text-center mt-4">
+        <a href="/docs/autoapi/index.html" class="btn btn-info mx-2">Sphinx Documentation</a>
+        <a href="/api/docs" class="btn btn-info mx-2">Swagger Documentation</a>
     </div>
 
+    <div class="container-fluid bg-dark text-white py-5"><p>{{ version }}</p> </div>
+
+</div>
     <!-- Secrets container -->
     <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Secrets</h2>
-
-            <!-- Create Bucket functionality -->
-            <div class="d-flex">
-                <input type="text" id="bucketNameInput" placeholder="Enter bucket name" class="form-control">
-                <button id="createBucketBtn" class="btn btn-primary ml-2">Create Bucket</button>
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" id="appNameInput" placeholder="Enter app name" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" id="bucketNameInput" placeholder="Enter bucket name" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <button id="createBucketBtn" class="btn btn-primary w-100">Create Bucket</button>
+                </div>
             </div>
         </div>
 
-        {% for bucket, secrets in secrets.items() %}
-        <!-- Collapsible bucket -->
+
+        <!-- Search Bar for Looking up Secrets -->
+        <div class="mb-4">
+            <input type="text" id="searchInput" placeholder="Search for secrets" class="form-control">
+        </div>
+
+        {% for app_name, buckets in secrets.items() %}
         <div class="card mb-2">
-            <div class="card-header" data-toggle="collapse" href="#{{ bucket }}-secrets">
-                <h3 class="mb-0">{{ bucket }}</h3>
+            <div class="card-header" data-toggle="collapse" href="#{{ app_name }}-buckets">
+                <h3 class="mb-0">{{ app_name }}</h3>
             </div>
-            <div id="{{ bucket }}-secrets" class="collapse">
+            <div id="{{ app_name }}-buckets" class="collapse">
                 <div class="card-body">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Secret Name</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for secret in secrets %}
-                            <tr>
-                                <td>{{ secret }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% for bucket, secrets_list in buckets.items() %}
+                    <div class="card mb-2">
+                        <div class="card-header" data-toggle="collapse" href="#{{ app_name }}-{{ bucket }}-secrets">
+                            <h4 class="mb-0">{{ bucket }}</h4>
+                        </div>
+                        <div id="{{ app_name }}-{{ bucket }}-secrets" class="collapse">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Secret Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for secret in secrets_list %}
+                                    <tr>
+                                        <td>{{ secret }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Include Bootstrap's JS & jQuery -->
     <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
 
-
-    <!-- AJAX for bucket creation -->
     <script>
-    $('#createBucketBtn').on('click', function() {
-    let bucketName = $('#bucketNameInput').val().trim();
+        $('#createBucketBtn').on('click', function() {
+            let appName = $('#appNameInput').val().trim();
+            let bucketName = $('#bucketNameInput').val().trim();
+            if (!appName) {
+                alert("Please enter an app name!");
+                return;
+            }
+            if (!bucketName) {
+                alert("Please enter a bucket name!");
+                return;
+            }
+            $.ajax({
+                url: "/create_bucket/",
+                type: "POST",
+                data: JSON.stringify({ app_name: appName, bucket: bucketName }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function(data) {
+                    if (data.message) {
+                        alert("Bucket '" + bucketName + "' under App '" + appName + "' created successfully! An email has been sent to the owner if configured.");
+                        location.reload();
+                    } else {
+                        alert("Error creating bucket: " + data.error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert("An error occurred: " + xhr.responseText);
+                }
+            });
+        });
 
-    // Validate bucket name
-    if(!bucketName) {
-        alert("Please enter a bucket name!");
-        return;
+    // ToggleTheme Functions
+    $(document).ready(function(){
+    // Check local storage for theme
+    if (localStorage.getItem('theme') === 'dark') {
+        $('body').attr('data-theme', 'dark');
+        $('.sun-icon').hide();
+        $('.moon-icon').show();
     }
 
-    // AJAX call to your endpoint
-    $.ajax({
-        url: "/create_bucket/",
-        type: "POST",
-        data: JSON.stringify({ bucket: bucketName }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function(data) {
-            if (data.message) {
-                alert("Bucket '" + bucketName + "' created successfully! An email has been sent to the owner.");
-                // Refresh page to show the new bucket
-                location.reload();
-            } else {
-                alert("Error creating bucket: " + data.error);
-            }
-        },
-        error: function(xhr, status, error) {
-            alert("An error occurred: " + xhr.responseText);
+    // Toggle theme on SVG icon click
+    $('#themeToggleIcon').on('click', function() {
+        if ($('body').attr('data-theme') === 'dark') {
+            $('body').removeAttr('data-theme');
+            localStorage.setItem('theme', 'light');
+            $('.sun-icon').show();
+            $('.moon-icon').hide();
+        } else {
+            $('body').attr('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            $('.sun-icon').hide();
+            $('.moon-icon').show();
         }
     });
 });
 
+    // Search Functions
+
+$(document).ready(function() {
+    $("#searchInput").on("keyup", function() {
+        const value = $(this).val().toLowerCase();
+
+        // If the search bar is empty, collapse all
+        if (!value) {
+            $(".collapse").collapse('hide');
+            return;
+        }
+
+        $("table tbody tr").each(function() {
+            const row = $(this);
+            if (row.text().toLowerCase().indexOf(value) > -1) {
+                row.show();
+                row.closest('.collapse').collapse('show');  // Expand the parent collapsible
+            } else {
+                row.hide();
+            }
+        });
+    });
+});
+
+
+
     </script>
+
 </body>
 
 </html>

@@ -16,12 +16,13 @@ ns = Namespace('delete_secret', description='Route Namespace for Deleting Secret
 
 # Model for secret data deletion in request payload
 delete_model = ns.model('DeleteSecret', {
+    'app_name': fields.String(required=True, description='Application Name'),
     'bucket': fields.String(required=True, description='Name of the bucket where the secret is stored'),
     'secret_name': fields.String(required=True, description='Name of the secret to be deleted')
 })
 
 
-@ns.route('/<string:bucket>/<string:secret_name>')
+@ns.route('/<string:app_name>/<string:bucket>/<string:secret_name>')
 class DeleteSecret(Resource):
     """
     Resource class for deleting secrets.
@@ -37,7 +38,7 @@ class DeleteSecret(Resource):
         HTTPStatus.NOT_FOUND: 'Bucket or Secret not found.',
         HTTPStatus.INTERNAL_SERVER_ERROR: 'Internal server error encountered.',
     })
-    def delete(self, bucket, secret_name):
+    def delete(self, bucket, secret_name, app_name):
         """
         Delete endpoint.
         Deletes a secret identified by its bucket and name.
@@ -54,9 +55,9 @@ class DeleteSecret(Resource):
             return {'message': 'Unauthorized access to this bucket.'}, HTTPStatus.UNAUTHORIZED
 
         try:
-            if (cry_secrets_management.bucket_exists(bucket)
-                    and cry_secrets_management.secret_exists(bucket, secret_name)):
-                cry_secrets_management.delete_secret(bucket, secret_name)
+            if (cry_secrets_management.bucket_exists(bucket, app_name)
+                    and cry_secrets_management.secret_exists(bucket, secret_name, app_name)):
+                cry_secrets_management.delete_secret(bucket, secret_name, app_name)
                 logging.info(f"Secret '{secret_name}' deleted successfully from '{bucket}'.")
                 return {'message': f"Secret '{secret_name}' deleted successfully from '{bucket}'."}, HTTPStatus.OK
             else:

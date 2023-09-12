@@ -1,0 +1,7 @@
+{
+  "DDL_USER": "fznmtdjmpcjdwqjckjdthhdy@psql-mock-database-cloud",
+  "DML_USER": "fznmtdjmpcjdwqjckjdthhdy@psql-mock-database-cloud",
+  "DB_HOST": "psql-mock-database-cloud.postgres.database.azure.com",
+  "DB_PORT": "5432",
+  "DB_NAME": "booking1694428865401rdbmppwzaobfylkq"
+}

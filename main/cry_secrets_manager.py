@@ -9,6 +9,8 @@ import time
 from flask import Flask, send_from_directory
 from flask_restx import Api, Namespace
 from waitress import serve
+from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter
 
 import routes.cry_home
 from modules import cry_database
@@ -19,8 +21,43 @@ from globals import LOG_LEVEL
 
 # Flask app initialization
 app = Flask(__name__, template_folder='../templates', static_folder='../templates/static')
-api = Api(app, doc='/swagger/', title='AmethystKey - Secret Management API',
+# api = Api(app, doc='/swagger/', title='AmethystKey - Secret Management API',
+#          description='API endpoints for secret management')
+api = Api(app, doc='/api/docs/', title='AmethystKey - Secret Management API',
           description='API endpoints for secret management')
+
+
+# @app.route('/', endpoint='home')
+# def home():
+#    return routes.cry_home.home_page()
+
+
+# Rate Limiter setup
+limiter = Limiter(
+    key_func=get_remote_address
+)
+
+limiter.init_app(app)
+
+
+@limiter.request_filter
+def exempt_users():
+    return False  # No exemption, apply the limiter to everyone
+
+
+@limiter.limit("5 per minute")
+@app.route("/<path:path>")
+def catch_all(path):
+    return app.send_static_file(path)
+
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
 
 # Namespace initialization
 ns = Namespace('secrets', description='CRYSTAL Platform Secret Management Service')
@@ -47,28 +84,22 @@ logging.basicConfig(level=LOG_LEVEL)
 # Dynamically loading route files
 routes_folder = 'routes'
 route_files = [filename for filename in os.listdir(routes_folder) if filename.startswith('cry_')]
+route_files.sort()  # Sort the list of route files alphabetically
+
+# Add the home route first
+api.add_namespace(routes.cry_home.ns)
+
+# Add other route files
 for route_file in route_files:
     if route_file != 'cry_home.py':
         module_name = f'routes.{os.path.splitext(route_file)[0]}'
         module = importlib.import_module(module_name)
         api.add_namespace(module.ns)
 
-api.add_namespace(routes.cry_home.ns)
-
-
-def custom_order(namespace, func):
-    """Ordering function for arranging API endpoints."""
-
-    return api.namespaces.index(namespace), namespace.resources.index(func)
-
-
-api._default_order = custom_order
-
 
 @app.route('/docs/')
 def render_docs():
     """Endpoint to serve the main documentation page."""
-
     docs_dir = os.path.join(os.path.dirname(__file__), '../docs/_build')
     return send_from_directory(docs_dir, 'index.html')
 
@@ -76,7 +107,6 @@ def render_docs():
 @app.route('/docs/<path:filename>')
 def serve_static(filename):
     """Endpoint to serve static files from the documentation folder."""
-
     return send_from_directory('../docs/_build', filename)
 
 
@@ -91,7 +121,6 @@ bucket_keys_lock = threading.Lock()
 
 def start_sync_thread():
     """Start a synchronization loop to periodically sync buckets, keys, and secrets from the database."""
-
     while True:
         logging.info("Syncing Buckets & Keys from Database")
         with bucket_keys_lock:
@@ -108,9 +137,12 @@ if __name__ == '__main__':
     sync_thread.start()
 
     # Start the server
-    serve(
-        app,
-        host='127.0.0.1',
-        port=7443,
-        threads=8
-    )
+    # serve(
+    #    app,
+    #    host='127.0.0.1',
+    #    port=7443,
+    #    threads=8,
+    #    _quiet=False
+    # )
+    print(app.url_map)
+    app.run()
