@@ -60,4 +60,14 @@ img[alt="AmethystKey Logo"] {
     border-color: #555 !important;
 }
 
-
+/* Footer styling */
+.footer {
+    position: fixed; /* This will fix the footer to the bottom of the screen */
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #f1f1f1;
+    text-align: center;
+    padding: 10px 0;
+    z-index: 5; /* Ensure the footer is above other elements but below the logo */
+}

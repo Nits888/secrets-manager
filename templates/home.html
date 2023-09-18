@@ -18,10 +18,10 @@
 
 <body>
 <!-- Main container -->
-<div class="container-fluid bg-dark text-white py-5 position-relative"> <!-- Added position-relative -->
+<div class="container-fluid bg-dark text-white py-5 position-relative" style="padding-top: 320px;">
 
     <!-- AmethystKey Logo -->
-    <img src="{{ url_for('static', filename='amethystKeyLogo.svg') }}" alt="AmethystKey Logo" class="position-absolute" style="top: 10px; left: 10px; width: 300px;"> <!-- Adjust width as needed -->
+    <img src="{{ url_for('static', filename='amethystKeyLogo.svg') }}" alt="AmethystKey Logo" class="position-absolute" style="top: 10px; left: 10px; width: 300px;">
 
     <!-- Theme Toggle -->
     <svg id="themeToggleIcon" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -33,34 +33,39 @@
 
     <h1 class="text-center">AmethystKey - CRYSTAL Secret Management Service</h1>
     <p class="text-center">It combines the allure of amethyst, a captivating gemstone, with the idea of securely safeguarding valuable keys or secrets.</p>
-    <div class="text-center mt-4">
-        <a href="/docs/autoapi/index.html" class="btn btn-info mx-2">Sphinx Documentation</a>
-        <a href="/api/docs" class="btn btn-info mx-2">Swagger Documentation</a>
+    <div class="text-center mt-4 d-flex flex-column flex-md-row justify-content-center"> <!-- Added justify-content-center -->
+        <a href="/docs/autoapi/index.html" class="btn btn-info mx-2">Code Documentation</a>
+        <a href="/api/docs" class="btn btn-info mx-2">Swagger API Documentation</a>
+        <a href="https://confluence Link" class="btn btn-info mx-2">Confluence Documentation</a>
     </div>
-
-    <div class="container-fluid bg-dark text-white py-5"><p>{{ version }}</p> </div>
 
 </div>
     <!-- Secrets container -->
-    <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Secrets</h2>
-            <div class="row">
-                <div class="col-md-4">
-                    <input type="text" id="appNameInput" placeholder="Enter app name" class="form-control">
-                </div>
-                <div class="col-md-4">
-                    <input type="text" id="bucketNameInput" placeholder="Enter bucket name" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <button id="createBucketBtn" class="btn btn-primary w-100">Create Bucket</button>
-                </div>
-            </div>
-        </div>
+<div class="container mt-5">
 
+    <!-- Secrets Heading -->
+    <div class="text-center mb-4">
+        <h2>Secrets</h2>
+    </div>
+
+    <!-- Input Fields and Button -->
+    <div class="row justify-content-center mb-4"> <!-- Added mb-4 for spacing below the button -->
+        <div class="col-12 col-md-4 mb-2 mb-md-0">
+            <!-- App Name Input -->
+            <input type="text" id="appNameInput" placeholder="Enter app name" class="form-control">
+        </div>
+        <div class="col-12 col-md-4 mb-2 mb-md-0">
+            <!-- Bucket Name Input -->
+            <input type="text" id="bucketNameInput" placeholder="Enter bucket name" class="form-control">
+        </div>
+        <div class="col-12 col-md-3">
+            <!-- Create Bucket Button -->
+            <button id="createBucketBtn" class="btn btn-primary w-100">Create Bucket</button>
+        </div>
+    </div>
 
         <!-- Search Bar for Looking up Secrets -->
-        <div class="mb-4">
+        <div class="mb-4 mt-4"> <!-- Added mt-4 for spacing above the search bar -->
             <input type="text" id="searchInput" placeholder="Search for secrets" class="form-control">
         </div>
 
@@ -100,93 +105,15 @@
         {% endfor %}
     </div>
 
+    <!-- Footer -->
+    <div class="footer">
+    &copy; {{ year }} Your Company Name. <a href="your-link-here">Link to Page</a> | Version: {{ version }} | Last Modified: {{ modifiedTime }}
+    </div>
+
+
     <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
-
-    <script>
-        $('#createBucketBtn').on('click', function() {
-            let appName = $('#appNameInput').val().trim();
-            let bucketName = $('#bucketNameInput').val().trim();
-            if (!appName) {
-                alert("Please enter an app name!");
-                return;
-            }
-            if (!bucketName) {
-                alert("Please enter a bucket name!");
-                return;
-            }
-            $.ajax({
-                url: "/create_bucket/",
-                type: "POST",
-                data: JSON.stringify({ app_name: appName, bucket: bucketName }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function(data) {
-                    if (data.message) {
-                        alert("Bucket '" + bucketName + "' under App '" + appName + "' created successfully! An email has been sent to the owner if configured.");
-                        location.reload();
-                    } else {
-                        alert("Error creating bucket: " + data.error);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    alert("An error occurred: " + xhr.responseText);
-                }
-            });
-        });
-
-    // ToggleTheme Functions
-    $(document).ready(function(){
-    // Check local storage for theme
-    if (localStorage.getItem('theme') === 'dark') {
-        $('body').attr('data-theme', 'dark');
-        $('.sun-icon').hide();
-        $('.moon-icon').show();
-    }
-
-    // Toggle theme on SVG icon click
-    $('#themeToggleIcon').on('click', function() {
-        if ($('body').attr('data-theme') === 'dark') {
-            $('body').removeAttr('data-theme');
-            localStorage.setItem('theme', 'light');
-            $('.sun-icon').show();
-            $('.moon-icon').hide();
-        } else {
-            $('body').attr('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            $('.sun-icon').hide();
-            $('.moon-icon').show();
-        }
-    });
-});
-
-    // Search Functions
-
-$(document).ready(function() {
-    $("#searchInput").on("keyup", function() {
-        const value = $(this).val().toLowerCase();
-
-        // If the search bar is empty, collapse all
-        if (!value) {
-            $(".collapse").collapse('hide');
-            return;
-        }
-
-        $("table tbody tr").each(function() {
-            const row = $(this);
-            if (row.text().toLowerCase().indexOf(value) > -1) {
-                row.show();
-                row.closest('.collapse').collapse('show');  // Expand the parent collapsible
-            } else {
-                row.hide();
-            }
-        });
-    });
-});
-
-
-
-    </script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
 
 </body>
 

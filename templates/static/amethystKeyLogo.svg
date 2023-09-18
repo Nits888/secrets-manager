@@ -9,5 +9,5 @@
     <polygon points="390,200 280,200 200,120" fill="#b19cd9"/>
 
     <!-- Text -->
-    <text x="200" y="270" font-family="Verdana" font-size="40" fill="white" text-anchor="middle">AmethystKey</text>
+    <text x="200" y="270" font-family="Verdana" font-size="35" fill="white" text-anchor="middle">AmethystKey</text>
 </svg>
