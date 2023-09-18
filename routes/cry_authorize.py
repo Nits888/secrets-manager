@@ -12,8 +12,9 @@ import jwt
 ns = Namespace('authorize', description='Authorisation Route Namespace')
 
 authorize_model = ns.model('Authorize', {
-    'client_id': fields.String(required=True, description='Client ID'),
-    'bucket_name': fields.String(required=True, description='Bucket Name')
+    'app_name': fields.String(required=True, description='Application Name'),
+    'bucket_name': fields.String(required=True, description='Bucket Name'),
+    'client_id': fields.String(required=True, description='Client ID')
 })
 
 token_verify_model = ns.model('TokenVerify', {
@@ -22,7 +23,7 @@ token_verify_model = ns.model('TokenVerify', {
 
 logging.basicConfig(level=LOG_LEVEL)
 
-SECRET_KEY = environ.get("CRY_INFO", "default_fallback_value")
+SECRET_KEY = environ.get("CRY_INFO", "ZGVmYXVsdF9mYWxsYmFja192YWx1ZQo=")
 
 
 @ns.route('/')
@@ -44,15 +45,17 @@ class AuthoriseResource(Resource):
             data = ns.payload
             client_id = data.get('client_id')
             bucket_name = data.get('bucket_name')
+            app_name = data.get('app_name')
 
-            # Check if the client_id and bucket_name combination is valid
-            credentials = bucket_cache.get(bucket_name, None)
+            # Check if the client_id and app_name + bucket_name combination is valid
+            credentials = bucket_cache.get((app_name, bucket_name), None)
             if not credentials or credentials['client_id'] != client_id:
                 return {'message': 'Invalid client_id or bucket_name'}, HTTPStatus.BAD_REQUEST
 
             token = jwt.encode({
                 'client_id': client_id,
                 'bucket_name': bucket_name,
+                'app_name': app_name,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)  # Token expires after 1 day
             }, SECRET_KEY, algorithm='HS256')
 

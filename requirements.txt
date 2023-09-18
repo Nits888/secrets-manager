@@ -9,3 +9,4 @@ pydata_sphinx_theme
 PyJWT
 jwt
 requests
+flask_limiter

@@ -6,7 +6,7 @@ from modules import cry_secrets_management
 
 logging.basicConfig(level=LOG_LEVEL)
 
-ns = Namespace('home', description='Home Route Namespace')
+ns = Namespace('crystal-secrets-manager', description='Home Route Namespace')
 
 
 @ns.route('/', doc=False)  # Exclude from Swagger UI
@@ -18,14 +18,18 @@ class Home(Resource):
     @staticmethod
     def get():
         try:
-            buckets = cry_secrets_management.get_buckets()
+            bucket_pairs = cry_secrets_management.get_buckets()  # Rename to be more clear
             secrets_list = {}
-            for bucket in buckets:
-                secrets_files = cry_secrets_management.get_secrets(bucket)
-                secrets_list[bucket] = secrets_files
+            for app_name, bucket_name in bucket_pairs:
+                secrets_files = cry_secrets_management.get_secrets(bucket_name, app_name)
+                if app_name not in secrets_list:
+                    secrets_list[app_name] = {}
 
+                secrets_list[app_name][bucket_name] = secrets_files
+
+            version = 'cry-sec-V1.0.0'
             # Render the template
-            html_content = render_template('home.html', buckets=buckets, secrets=secrets_list)
+            html_content = render_template('home.html', buckets=bucket_pairs, secrets=secrets_list, version=version)
 
             # Create a response with the correct Content-Type header
             response = make_response(html_content)

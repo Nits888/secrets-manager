@@ -32,22 +32,24 @@ def verify_token(token):
         # Decode the token using the SECRET_KEY
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         g.bucket_name = payload.get('bucket_name', None)  # Set the bucket name early
+        g.app_name = payload.get('app_name', None)  # Set the app name early
         client_id = payload.get('client_id', None)
 
-        if not g.bucket_name or not client_id:
+        if not g.bucket_name or not client_id or not g.app_name:
             logging.warning("Token validation failed: Missing bucket name or client ID.")
             return False, "Bucket name or Client ID is missing in the token."
 
         # Check the IP whitelist
         incoming_ip = request.remote_addr
-        bucket_config = get_bucket_config(g.bucket_name)  # Assume this function exists and fetches the bucket's config
+        bucket_config = get_bucket_config(g.bucket_name, g.app_name)
         allowed_ips = bucket_config.get("allowed_ips", [])
         if incoming_ip not in allowed_ips:
             logging.warning(f"Unauthorized IP address attempt: {incoming_ip} for bucket {g.bucket_name}.")
             return False, "Unauthorized IP address."
 
         # Fetch the client_id and client_secret associated with the bucket_name from the cache
-        credentials = bucket_cache.get(g.bucket_name, None)
+        credentials = bucket_cache.get((g.app_name, g.bucket_name), None)
+        logging.info(str(credentials))
         if credentials and credentials['client_id'] == client_id:
             logging.info(f"Token validation successful for client: {client_id} and bucket: {g.bucket_name}.")
             return True, "Token is valid."

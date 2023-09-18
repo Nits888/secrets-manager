@@ -15,6 +15,7 @@ ns = Namespace('update_secret', description='Route Namespace for Updating Secret
 
 # Model for update_secret request payload
 update_secret_model = ns.model('UpdateSecret', {
+    'app_name': fields.String(required=True, description='Application Name'),
     'bucket': fields.String(required=True, description='Name of the bucket where the secret will be updated'),
     'secret_name': fields.String(required=True, description='Name of the secret to be updated'),
     'secret': fields.String(required=True, description='New secret value')
@@ -48,6 +49,7 @@ class UpdateSecret(Resource):
         bucket = data.get('bucket')
         secret_name = data.get('secret_name')
         new_secret = data.get('secret')
+        app_name = data.get('app_name')
 
         # Check if bucket_name attribute exists in the g object
         if not hasattr(g, 'bucket_name'):
@@ -60,13 +62,13 @@ class UpdateSecret(Resource):
 
         try:
             # Check if the bucket and secret exist
-            if not cry_secrets_management.bucket_exists(bucket) or \
-               not cry_secrets_management.secret_exists(bucket, secret_name):
+            if not cry_secrets_management.bucket_exists(bucket, app_name) or \
+               not cry_secrets_management.secret_exists(bucket, secret_name, app_name):
                 logging.warning(f"Bucket '{bucket}' or secret '{secret_name}' not found when trying to update.")
                 return {'message': f"Bucket '{bucket}' or secret '{secret_name}' not found."}, HTTPStatus.NOT_FOUND
 
             # Update the secret
-            cry_secrets_management.update_secret(bucket, secret_name, new_secret)
+            cry_secrets_management.update_secret(bucket, secret_name, new_secret, app_name)
             logging.info(f"Secret '{secret_name}' updated successfully in '{bucket}'.")
             return {'message': f"Secret '{secret_name}' updated successfully in '{bucket}'."}, HTTPStatus.OK
         except Exception as e:

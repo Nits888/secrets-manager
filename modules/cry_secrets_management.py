@@ -23,9 +23,9 @@ class SecretError(Exception):
     pass
 
 
-def _read_key_salt_from_file(bucket):
+def _read_key_salt_from_file(bucket, app_name):
     """Internal utility to read the key and salt from the bucket's files."""
-    secret_master_key_path = os.path.join(SECRETS_DIR, bucket, SECRET_KEY_FILE)
+    secret_master_key_path = os.path.join(SECRETS_DIR, app_name, bucket, SECRET_KEY_FILE)
 
     if not os.path.exists(secret_master_key_path):
         logger.error(f"Combined Key or Salt file not found for bucket '{bucket}'.")
@@ -40,19 +40,19 @@ def _read_key_salt_from_file(bucket):
     return key, salt
 
 
-def _get_secret_file_path(bucket, service_name):
+def _get_secret_file_path(bucket, secret_name, app_name):
     """Return the file path for a given secret within a bucket."""
-    return os.path.join(SECRETS_DIR, bucket, f"{service_name}.json")
+    return os.path.join(SECRETS_DIR, app_name, bucket, f"{secret_name}.json")
 
 
-def bucket_exists(bucket):
+def bucket_exists(bucket, app_name):
     """Check if the specified bucket exists."""
-    return os.path.exists(os.path.join(SECRETS_DIR, bucket))
+    return os.path.exists(os.path.join(SECRETS_DIR, app_name, bucket))
 
 
-def create_bucket(bucket):
+def create_bucket(bucket, app_name):
     """Create a new secrets bucket with associated key and salt."""
-    if not bucket_exists(bucket):
+    if not bucket_exists(bucket, app_name):
         # Generate a new key and salt for the bucket
         key = cry_encryption.generate_key()
         salt = cry_utils.generate_salt()
@@ -66,18 +66,18 @@ def create_bucket(bucket):
         combined_key_salt = f"{key_str}${salt_str}"  # Using '$' as delimiter for this example.
 
         try:
-            cry_database.backup_keys(bucket, combined_key_salt, client_id)
+            cry_database.backup_keys(bucket, combined_key_salt, client_id, app_name)
         except Exception as e:
             logging.error(f"Error while creating bucket: {str(e)}")
             raise BucketError('Failed to create bucket.')
 
-        os.makedirs(os.path.join(SECRETS_DIR, bucket))
+        os.makedirs(os.path.join(SECRETS_DIR, app_name, bucket))
 
         # Write the combined key and salt in binary format
-        with open(os.path.join(SECRETS_DIR, bucket, SECRET_KEY_FILE), 'wb') as combined_file:
+        with open(os.path.join(SECRETS_DIR, app_name, bucket, SECRET_KEY_FILE), 'wb') as combined_file:
             combined_file.write(combined_key_salt.encode('utf-8'))
 
-        bucket_cache[bucket] = {
+        bucket_cache[(app_name, bucket)] = {
             'client_id': client_id,
         }
         return True, client_id
@@ -86,67 +86,73 @@ def create_bucket(bucket):
         raise BucketError('Bucket already exists.')
 
 
-def secret_exists(bucket, service_name):
+def secret_exists(bucket, secret_name, app_name):
     """Check if a secret associated with a service name exists within a bucket."""
-    return os.path.exists(_get_secret_file_path(bucket, service_name))
+    return os.path.exists(_get_secret_file_path(bucket, secret_name, app_name))
 
 
-def store_secret(bucket, service_name, secret):
+def store_secret(bucket, secret_name, secret, app_name):
     """Store an encrypted secret within a specified bucket and service name."""
-    secret_path = _get_secret_file_path(bucket, service_name)
-    key, salt = _read_key_salt_from_file(bucket)
+    secret_path = _get_secret_file_path(bucket, secret_name, app_name)
+    key, salt = _read_key_salt_from_file(bucket, app_name)
     if isinstance(secret, bytes):
         secret = secret.decode()
     encrypted_secret = cry_encryption.encrypt_string(secret, salt)
-    cry_database.save_secret(bucket, service_name, encrypted_secret)
+    cry_database.save_secret(bucket, secret_name, encrypted_secret, app_name)
     with open(secret_path, 'wb') as secret_file:
         secret_file.write(encrypted_secret)
 
 
-def retrieve_secret(bucket, service_name):
+def retrieve_secret(bucket, secret_name, app_name):
     """Retrieve and decrypt a secret from the specified bucket and service name."""
-    secret_path = _get_secret_file_path(bucket, service_name)
+    secret_path = _get_secret_file_path(bucket, secret_name, app_name)
     if not os.path.exists(secret_path):
-        raise SecretError(f"Service '{service_name}' not found in bucket '{bucket}'.")
-    key, salt = _read_key_salt_from_file(bucket)
+        raise SecretError(f"Service '{secret_name}' not found in bucket '{bucket}'.")
+    key, salt = _read_key_salt_from_file(bucket, app_name)
     with open(secret_path, 'rb') as secret_file:
         encrypted_secret = secret_file.read()
     decrypted_secret = cry_encryption.decrypt_string(encrypted_secret, salt)
     return decrypted_secret
 
 
-def update_secret(bucket, service_name, new_secret):
+def update_secret(bucket, secret_name, new_secret, app_name):
     """Update and re-encrypt a secret associated with a service name within a bucket."""
-    secret_path = _get_secret_file_path(bucket, service_name)
+    secret_path = _get_secret_file_path(bucket, secret_name, app_name)
     if not os.path.exists(secret_path):
-        raise SecretError(f"Service '{service_name}' not found in bucket '{bucket}'.")
-    key, salt = _read_key_salt_from_file(bucket)
+        raise SecretError(f"Service '{secret_name}' not found in bucket '{bucket}'.")
+    key, salt = _read_key_salt_from_file(bucket, app_name)
     encrypted_secret = cry_encryption.encrypt_string(new_secret, salt)
-    cry_database.update_secret(bucket, service_name, encrypted_secret)
+    cry_database.update_secret(bucket, secret_name, encrypted_secret, app_name)
     with open(secret_path, 'wb') as secret_file:
         secret_file.write(encrypted_secret)
 
 
-def delete_secret(bucket, service_name):
+def delete_secret(bucket, secret_name, app_name):
     """Delete a secret and its associated file within a bucket."""
-    cry_database.delete_secret(bucket, service_name)
-    secret_path = _get_secret_file_path(bucket, service_name)
+    cry_database.delete_secret(bucket, secret_name, app_name)
+    secret_path = _get_secret_file_path(bucket, secret_name, app_name)
     if os.path.exists(secret_path):
         os.remove(secret_path)
 
 
 def get_buckets():
-    """Retrieve a list of all buckets available."""
+    """Retrieve a list of all buckets available as (app_name, bucket_name) pairs."""
     try:
-        bucket_paths = [f.name for f in os.scandir(SECRETS_DIR) if f.is_dir()]
-        return bucket_paths
+        app_paths = [f.path for f in os.scandir(SECRETS_DIR) if f.is_dir()]
+        bucket_pairs = []
+        for app_path in app_paths:
+            app_name = os.path.basename(app_path)
+            bucket_names = [f.name for f in os.scandir(app_path) if f.is_dir()]
+            for bucket_name in bucket_names:
+                bucket_pairs.append((app_name, bucket_name))
+        return bucket_pairs
     except FileNotFoundError:
         return []
 
 
-def get_secrets(bucket):
+def get_secrets(bucket, app_name):
     """Retrieve a list of all secrets stored within a specified bucket."""
-    bucket_directory = os.path.join(SECRETS_DIR, bucket)
+    bucket_directory = os.path.join(SECRETS_DIR, app_name, bucket)
     if not os.path.exists(bucket_directory):
         return []
     secret_names = []

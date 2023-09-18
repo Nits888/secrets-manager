@@ -15,6 +15,7 @@ ns = Namespace('generate_secret', description='Route Namespace for Generating an
 
 # Model for generate_secret request payload
 generate_secret_model = ns.model('GenerateSecret', {
+    'app_name': fields.String(required=True, description='Application Name'),
     'bucket': fields.String(required=True, description='Name of the bucket where the secret will be stored'),
     'secret_name': fields.String(required=True, description='Name of the secret to be generated and stored')
 })
@@ -47,6 +48,7 @@ class GenerateSecret(Resource):
         data = ns.payload
         bucket = data.get('bucket')
         secret_name = data.get('secret_name')
+        app_name = data.get('app_name')
 
         # Check if bucket_name attribute exists in the g object
         if not hasattr(g, 'bucket_name'):
@@ -59,12 +61,12 @@ class GenerateSecret(Resource):
 
         try:
             # Check if the bucket exists
-            if not cry_secrets_management.bucket_exists(bucket):
+            if not cry_secrets_management.bucket_exists(bucket, app_name):
                 logging.warning(f"Bucket '{bucket}' not found when trying to generate a secret.")
                 return {'message': f"Bucket '{bucket}' not found."}, HTTPStatus.NOT_FOUND
 
             # Check if the secret_name already exists in the bucket
-            if cry_secrets_management.secret_exists(bucket, secret_name):
+            if cry_secrets_management.secret_exists(bucket, secret_name, app_name):
                 logging.warning(f"Secret '{secret_name}' already exists in bucket '{bucket}'.")
                 return {'message': f"Secret '{secret_name}' already exists in bucket '{bucket}'."}, HTTPStatus.CONFLICT
 
@@ -72,9 +74,10 @@ class GenerateSecret(Resource):
             random_secret = cry_utils.generate_random_secret()
 
             # Save the generated secret (no need to encode it)
-            cry_secrets_management.store_secret(bucket, secret_name, random_secret)
+            cry_secrets_management.store_secret(bucket, secret_name, random_secret, app_name)
             logging.info(f"Random secret for '{secret_name}' generated and saved in '{bucket}'.")
             return {'message': f"Random secret for '{secret_name}' generated and saved in '{bucket}'."}, HTTPStatus.OK
         except Exception as e:
             logging.error(f"Error generating secret: {str(e)}")
-            return {'message': 'Failed to generate and save secret. Please try again later.'}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ({'message': 'Failed to generate and save secret. Please try again later.'},
+                    HTTPStatus.INTERNAL_SERVER_ERROR)
