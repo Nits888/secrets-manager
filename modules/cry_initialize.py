@@ -151,7 +151,20 @@ def initialize_secrets_from_db():
         if not os.path.exists(secret_file_path):
             with open(secret_file_path, "wb") as secret_file:
                 secret_file.write(encrypted_secret)
+def refresh_bucket_cache():
+    """
+    Refresh the bucket cache to ensure it contains all apps and buckets from the database.
+    """
+    # Step 1: Get the current list of apps and buckets from the database
+    current_buckets = cry_database.get_all_buckets()
 
+    # Step 2: Compare it with the cache to identify any missing apps or buckets
+    for bucket in current_buckets:
+        app_name, bucket_name, _, client_id = bucket
+        if (app_name, bucket_name) not in bucket_cache:
+            # Step 3: Add the missing apps or buckets to the cache
+            bucket_cache[app_name, bucket_name] = {'client_id': client_id}
+            logging.info(f"Added missing app '{app_name}' and bucket '{bucket_name}' to the cache")
 
 def initialize_bucket_cache():
     """
