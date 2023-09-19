@@ -1,6 +1,7 @@
 body {
     background-color: #f4f4f4;
     color: #333;
+    font-family: Arial, sans-serif; /* Optional: Set a default font */
 }
 
 .container-fluid {
@@ -12,15 +13,32 @@ body {
 }
 
 #themeToggleIcon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     cursor: pointer;
     transition: transform 0.3s;
 }
 
+/* Container for theme toggle and login/logout button */
+.theme-login-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Spacing between the icon and the button */
+    z-index: 15; /* Ensure it's above other elements */
+}
+
+
 img[alt="AmethystKey Logo"] {
-    margin: 10px;
+    top: 20px;
+    left: 20px;
+    width: 300px;
+    z-index: 10;
+    position: absolute; /* Ensure it's positioned relative to its nearest positioned ancestor */
+}
+
+.navbar {
+    padding: 10px 20px; /* Add some padding to the navbar */
 }
 
 [data-theme="dark"] {
@@ -70,4 +88,13 @@ img[alt="AmethystKey Logo"] {
     text-align: center;
     padding: 10px 0;
     z-index: 5; /* Ensure the footer is above other elements but below the logo */
+}
+
+[data-theme="dark"] .footer {
+    background-color: #444;
+    color: #eee;
+}
+
+.secrets-table {
+    font-size: 0.8em;  /* Adjust this value as needed */
 }
