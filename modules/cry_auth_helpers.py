@@ -1,3 +1,12 @@
+"""
+cry_auth_helpers
+~~~~~~~~~~~~~~~~
+
+This module provides helper functions for Single Sign-On (SSO) authentication,
+IP whitelisting, and JWT token operations.
+
+"""
+
 import logging
 from functools import wraps
 
@@ -17,48 +26,73 @@ auth = HTTPTokenAuth(scheme='Bearer')
 
 
 def sso_required(func):
-    """
-    Decorator to ensure Single Sign-On (SSO) authentication.
+    """Decorator to ensure Single Sign-On (SSO) authentication.
+
+    Args:
+        func (function): The function to be decorated.
+
+    Returns:
+        function: The decorated function.
     """
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Check if the session contains an access token for SSO
-        access_token = session.get('access_token')
-        if not access_token or not verify_sso_token(access_token):
-            try:
+        try:
+            # Check if the session contains an access token for SSO
+            access_token = session.get('access_token')
+            if not access_token:
+                logging.warning("No access token found in session.")
+
+            if not access_token or not verify_sso_token(access_token):
                 # If no valid access token is found, redirect to Keycloak login
                 auth_url = keycloak_openid.auth_url(redirect_uri=url_for('keycloak_callback_keycloak_callback',
                                                                          _external=True))
                 return redirect(auth_url)
-            except KeycloakConnectionError:
-                logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
-                g.user = "Welcome User"  # Set a default user value in the Flask global object
-        return func(*args, **kwargs)
+
+            return func(*args, **kwargs)
+
+        except KeycloakConnectionError:
+            logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
+            g.user = "Welcome User"  # Set a default user value in the Flask global object
+            return func(*args, **kwargs)
+
+        except Exception as e:
+            logging.error(f"Unexpected error in sso_required decorator: {str(e)}")
+            return {"error": "Internal server error."}, 500  # 500 Internal Server Error
 
     return wrapper
 
 
 def verify_sso_token(token):
-    """
-    Verifies the SSO token using Keycloak.
+    """Verifies the SSO token using Keycloak.
+
+    Args:
+        token (str): The SSO token to be verified.
+
+    Returns:
+        bool: True if the token is active, False otherwise.
     """
     try:
         token_info = keycloak_openid.introspect(token)
         if token_info.get('active'):
-            return True
+            return True, "Token is valid."
         else:
             logging.warning("SSO token is not active.")
-            return False
+            return False, "Token is invalid."
     except Exception as e:
         logging.error(f"SSO token validation error: {str(e)}")
-        return False
+        return False, "Token is invalid."
 
 
 def ip_whitelist_required(f):
-    """
-    Decorator to check if the incoming IP is whitelisted.
-    """
+    """Decorator to check if the incoming IP is whitelisted.
+
+     Args:
+         f (function): The function to be decorated.
+
+     Returns:
+         function: The decorated function.
+     """
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -75,7 +109,7 @@ def ip_whitelist_required(f):
             return f(*args, **kwargs)
 
         logging.warning(f"Unauthorized IP address attempt: {incoming_ip} for bucket {g.bucket_name}.")
-        return jsonify({'error': 'Unauthorized IP address'}), 403
+        return {'error': 'Unauthorized IP address'}, 403  # Return the dictionary directly
 
     return decorated_function
 

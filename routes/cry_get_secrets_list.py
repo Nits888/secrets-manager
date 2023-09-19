@@ -1,3 +1,10 @@
+"""
+cry_get_secrets_list.py
+-----------------------
+
+Module for retrieving a list of secrets based on the specified bucket.
+"""
+
 import logging
 from http import HTTPStatus
 

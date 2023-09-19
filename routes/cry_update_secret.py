@@ -1,3 +1,10 @@
+"""
+cry_update_secret.py
+--------------------
+
+Module for updating secrets in the Secrets Management Service.
+"""
+
 import logging
 from flask import g
 from http import HTTPStatus

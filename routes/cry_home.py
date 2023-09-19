@@ -1,3 +1,11 @@
+"""
+cry_home.py
+-----------
+
+Module for serving the home page of the Secrets Management Service.
+This displays a list of buckets and their corresponding secrets.
+"""
+
 import logging
 
 import keycloak
@@ -6,7 +14,7 @@ from flask_restx import Resource, Namespace
 
 from globals import LOG_LEVEL, keycloak_openid, server_url, realm_name
 from modules import cry_secrets_management
-from modules.cry_auth_helpers import sso_required, verify_sso_token
+from modules.cry_auth_helpers import sso_required
 
 logging.basicConfig(level=LOG_LEVEL)
 
@@ -30,23 +38,23 @@ class Home(Resource):
         logout_url = (f"{server_url}/auth/realms/{realm_name}/protocol/openid-connect/logout?redirect_uri="
                       f"{url_for(logout_redirect_endpoint, _external=True)}")
 
-        if not access_token or not verify_sso_token(access_token):
-            try:
-                auth_url = keycloak_openid.auth_url(
-                    redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
-                login_required = True  # Set the flag to True if login is required
-            except keycloak.exceptions.KeycloakConnectionError:
-                logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
-                login_required = True  # Set the flag to True if there's an error connecting to Keycloak
-        else:
+        if access_token:
             try:
                 user_info = keycloak_openid.decode_token(access_token)
                 user_name = user_info.get('name', "Stranger")
             except keycloak.exceptions.KeycloakConnectionError:
                 logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
-                login_required = True  # Set the flag to True if there's an error connecting to Keycloak
+                login_required = True
             except Exception as e:
                 logging.warning(f"Failed to decode user info from token: {str(e)}")
+        else:
+            try:
+                auth_url = keycloak_openid.auth_url(
+                    redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
+                login_required = True
+            except keycloak.exceptions.KeycloakConnectionError:
+                logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
+                login_required = True
 
         try:
             bucket_pairs = cry_secrets_management.get_buckets()

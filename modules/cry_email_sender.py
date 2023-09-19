@@ -1,3 +1,12 @@
+"""
+cry_email_sender
+~~~~~~~~~~~~~~~~
+
+This module provides a utility to send emails using an external email sender API.
+It uses the `requests` library to make a POST request to the email sender API.
+
+"""
+
 import requests
 import logging
 
@@ -10,13 +19,21 @@ API_KEY = "YOUR_API_KEY"  # If your API requires an authentication key
 
 
 def send_email(subject, message_body, recipient_email):
-    """
-    Send an email using the external email sender API.
+    """Send an email using the external email sender API.
+
+    This function constructs a payload with the email details and sends a POST request
+    to the email sender API. It logs the result of the email sending operation.
 
     Args:
         subject (str): The subject of the email.
         message_body (str): The body of the email.
         recipient_email (str): The email address of the recipient.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If there's an error during the API request.
     """
     try:
         # Construct the payload

@@ -1,3 +1,12 @@
+"""
+cry_secrets_manager.py
+----------------------
+
+Main module for the CRYSTAL Platform Secret Management Service.
+This module initializes the Flask application, sets up routes, and starts the server.
+"""
+
+
 import base64
 import importlib
 import json

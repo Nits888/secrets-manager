@@ -1,3 +1,14 @@
+"""
+cry_encryption
+~~~~~~~~~~~~~~
+
+This module provides utilities for symmetric encryption and decryption using
+the Fernet symmetric encryption and PBKDF2HMAC key derivation. It includes
+functions to generate encryption keys, encrypt and decrypt strings, and handle
+custom encryption-related exceptions.
+
+"""
+
 import base64
 import os
 from cryptography.fernet import Fernet, InvalidToken
@@ -9,12 +20,12 @@ SALT_LENGTH = 16  # 128 bits
 
 
 class EncryptionError(Exception):
-    """Custom exception for encryption-related errors."""
+    """Custom exception raised for encryption-related errors."""
     pass
 
 
 class DecryptionError(Exception):
-    """Custom exception for decryption-related errors."""
+    """Custom exception raised for decryption-related errors."""
     pass
 
 

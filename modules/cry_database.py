@@ -1,3 +1,13 @@
+"""
+cry_database
+~~~~~~~~~~~~
+
+This module provides database operations for managing encryption keys and secrets.
+It uses a connection pool for efficient database connections and performs CRUD operations
+on the `bucket_keys` and `secrets` tables.
+
+"""
+
 import json
 import logging
 import os
@@ -109,6 +119,9 @@ def sync_keys():
     """Sync encryption keys from the database to the local file system.
 
     Each bucket's key is saved as a separate file in its respective directory.
+
+    Raises:
+        Exception: If any issue occurs during the syncing process.
     """
     try:
         with BACKUP_POOL.getconn() as conn, conn.cursor() as cur:
@@ -133,6 +146,9 @@ def initialize_buckets_and_keys_from_db():
 
     Returns:
         list: A list of tuples containing bucket names and their corresponding encryption keys.
+
+    Raises:
+        Exception: If any issue occurs during the retrieval process.
     """
     try:
         # Get a connection from the connection pool
@@ -176,7 +192,7 @@ def save_secret(bucket_name, secret_name, encrypted_secret, app_name):
                     INSERT INTO secrets (app_name, bucket_name, secret_name, encrypted_secret) 
                     VALUES (%s, %s, %s, %s) 
                     ON CONFLICT (app_name, bucket_name, secret_name) 
-                    DO UPDATE SET encrypted_secret = EXCLUDED.encrypted_secret;
+                    DO UPDATE SET encrypted_secret = EXCLUDED.encrypted_secret, updated_at = CURRENT_TIMESTAMP;
                 """
                 # Execute the query to insert or update the encrypted_secret
                 cur.execute(query, (app_name, bucket_name, secret_name, psycopg2.Binary(encrypted_secret)))
@@ -208,7 +224,7 @@ def update_secret(bucket_name, secret_name, encrypted_secret, app_name):
             with conn.cursor() as cur:
                 query = """
                     UPDATE secrets 
-                    SET encrypted_secret = %s 
+                    SET encrypted_secret = %s, updated_at = CURRENT_TIMESTAMP
                     WHERE app_name = %s AND bucket_name = %s AND secret_name = %s;
                 """
                 cur.execute(query, (psycopg2.Binary(encrypted_secret), app_name, bucket_name, secret_name))

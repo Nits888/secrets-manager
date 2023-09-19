@@ -1,7 +1,13 @@
+"""
+cry_encrypt_str.py
+------------------
+
+Module for encrypting provided text strings.
+"""
+
 from http import HTTPStatus
 from flask_restx import Namespace, Resource, fields
-from globals import auth_parser, LOG_LEVEL
-from modules.cry_auth import auth
+from globals import LOG_LEVEL
 from modules import cry_encryption
 import logging
 
@@ -25,7 +31,6 @@ class EncryptString(Resource):
 
     # @auth.login_required
     @ns.expect(encrypt_model, validate=True)
-    # @ns.doc(security='apikey')
     @ns.doc(responses={
         HTTPStatus.OK: 'String encrypted successfully.',
         # HTTPStatus.BAD_REQUEST: 'Invalid data provided.',

@@ -1,3 +1,10 @@
+"""
+cry_get_buckets.py
+------------------
+
+Module for retrieving the list of available buckets.
+"""
+
 import logging
 from flask_restx import Namespace, Resource
 from modules import cry_secrets_management

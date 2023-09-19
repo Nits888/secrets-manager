@@ -1,3 +1,10 @@
+"""
+cry_generate_password.py
+------------------------
+
+Module for generating random passwords of a specified length.
+"""
+
 import logging
 from flask_restx import Namespace, Resource, fields
 from modules import cry_utils
