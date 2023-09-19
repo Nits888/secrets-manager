@@ -81,3 +81,34 @@ $(document).ready(function() {
         });
     });
 });
+
+$('#resendBucketDetailsBtn').on('click', function() {
+    let appName = $('#appNameInput').val().trim();
+    let bucketName = $('#bucketNameInput').val().trim();
+    if (!appName) {
+        alert("Please enter an app name!");
+        return;
+    }
+    if (!bucketName) {
+        alert("Please enter a bucket name!");
+        return;
+    }
+    $.ajax({
+        url: "/resend_bucket_details",  // This should be the endpoint for resending bucket details
+        type: "POST",
+        data: JSON.stringify({ app_name: appName, bucket: bucketName }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function(data) {
+            if (data.message) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert("Error resending bucket details: " + data.error);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert("An error occurred: " + xhr.responseText);
+        }
+    });
+});

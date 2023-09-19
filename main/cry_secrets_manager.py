@@ -6,7 +6,7 @@ import os
 import threading
 import time
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_restx import Api, Namespace
 from waitress import serve
 from flask_limiter.util import get_remote_address
@@ -26,11 +26,8 @@ app = Flask(__name__, template_folder='../templates', static_folder='../template
 api = Api(app, doc='/api/docs/', title='AmethystKey - Secret Management API',
           description='API endpoints for secret management')
 
-
-# @app.route('/', endpoint='home')
-# def home():
-#    return routes.cry_home.home_page()
-
+# Flask App Secret Key - Dynamic
+app.config['SECRET_KEY'] = os.urandom(32).hex()
 
 # Rate Limiter setup
 limiter = Limiter(
@@ -57,6 +54,15 @@ def apply_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
+
+
+@app.before_request
+def log_real_ip():
+    x_real_ip = request.headers.get('X-Real-IP')
+    if x_real_ip:
+        logging.info(f"Incoming Request from IP {x_real_ip} on Route: {request.endpoint}")
+    else:
+        logging.info(f"Incoming Request from Unknown IP on Route: {request.endpoint}")
 
 
 # Namespace initialization

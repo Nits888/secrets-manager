@@ -1,9 +1,9 @@
 # Global variable to store bucket details in memory
+import logging
 import os
 
 from flask_restx import reqparse
-
-import logging
+from keycloak import KeycloakOpenID
 
 # Define the global logging level
 LOG_LEVEL = logging.DEBUG
@@ -27,3 +27,19 @@ SQL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '', 'sql', '
 # Define the RequestParser for handling authentication
 auth_parser = reqparse.RequestParser()
 auth_parser.add_argument('Authorization', location='headers', required=True, help='Bearer <token>')
+
+web_port = '7446'
+
+# KeyCloak Configuration
+server_url = 'https://crystal-' + server_env.lower() + '.systems.uk.hsbc:4443/auth/'
+client_secret_key = 'None'
+realm_name = 'CRYSTAL'
+client_id = 'cry' + server_env.lower()
+
+# Initialize Keycloak client
+keycloak_openid = KeycloakOpenID(
+    server_url=server_url,
+    client_id=client_id,
+    realm_name=realm_name,
+    client_secret_key=client_secret_key
+)
