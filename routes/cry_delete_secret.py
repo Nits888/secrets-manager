@@ -8,6 +8,7 @@ from http import HTTPStatus
 from globals import auth_parser
 from modules import cry_secrets_management
 from modules.cry_auth import auth
+from modules.cry_auth_helpers import ip_whitelist_required
 
 # Initialize logging with the specified log level from globals
 logging.basicConfig(level=LOG_LEVEL)
@@ -38,6 +39,7 @@ class DeleteSecret(Resource):
         HTTPStatus.NOT_FOUND: 'Bucket or Secret not found.',
         HTTPStatus.INTERNAL_SERVER_ERROR: 'Internal server error encountered.',
     })
+    @ip_whitelist_required  # Apply the IP whitelist decorator here
     def delete(self, bucket, secret_name, app_name):
         """
         Delete endpoint.

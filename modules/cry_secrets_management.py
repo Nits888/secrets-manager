@@ -1,9 +1,10 @@
 import base64
+import json
 import os
 import uuid
 import logging
 
-from globals import bucket_cache, SECRETS_DIR, SECRET_KEY_FILE
+from globals import bucket_cache, SECRETS_DIR, SECRET_KEY_FILE, server_env
 from modules import cry_database
 from modules import cry_encryption
 from modules import cry_utils
@@ -161,3 +162,25 @@ def get_secrets(bucket, app_name):
             secret_name = os.path.splitext(secret_file)[0]
             secret_names.append(secret_name)
     return secret_names
+
+
+def get_bucket_config(bucket_name, app_name):
+    """
+    Load the bucket-specific configuration by searching through the 'config' directory and its subdirectories.
+
+    Args:
+        bucket_name (str): The name of the bucket.
+        app_name (str): Application Name for the Bucket.
+
+    Returns:
+        dict: Configuration data for the bucket or None if not found.
+    """
+    config_dir = os.path.join('config', server_env, app_name)
+    for root, dirs, files in os.walk(config_dir):
+        if f"{bucket_name}.json" in files:
+            config_path = os.path.join(root, f"{bucket_name}.json")
+            with open(config_path, 'r') as config_file:
+                config = json.load(config_file)
+            return config
+
+    return None

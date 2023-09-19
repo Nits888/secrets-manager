@@ -43,3 +43,7 @@ keycloak_openid = KeycloakOpenID(
     realm_name=realm_name,
     client_secret_key=client_secret_key
 )
+
+# Global KEY
+# Fetch SECRET_KEY from environment variable CRY_INFO
+SECRET_KEY = os.environ.get("CRY_INFO", "UGFwcHVDYW50RGFuY2VTYWFsYUAyMDIwMzEjJCUK")

@@ -6,8 +6,7 @@ from flask_restx import Resource, Namespace
 
 from globals import LOG_LEVEL, keycloak_openid, server_url, realm_name
 from modules import cry_secrets_management
-from modules.cry_auth import verify_sso_token, \
-    sso_required  # Import the auth object and the verify_sso_token function
+from modules.cry_auth_helpers import sso_required, verify_sso_token
 
 logging.basicConfig(level=LOG_LEVEL)
 
