@@ -1,3 +1,10 @@
+"""
+cry_health_check.py
+-------------------
+
+Module for checking the health status of the Secrets Management Service.
+"""
+
 from flask_restx import Namespace, Resource
 from http import HTTPStatus
 

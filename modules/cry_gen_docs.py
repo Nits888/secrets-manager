@@ -1,13 +1,30 @@
+"""
+cry_gen_docs
+~~~~~~~~~~~~
+
+This module provides utilities for generating Sphinx documentation for the project.
+It sets up the necessary directories, creates a configuration file for Sphinx,
+generates a table of contents, and runs the Sphinx build process.
+
+"""
+
 import os
 import subprocess
 import logging
 from globals import LOG_LEVEL
 
-
 logging.basicConfig(level=LOG_LEVEL)
 
 
 def setup_directories(script_dir):
+    """Sets up the necessary directories for documentation generation.
+
+    Args:
+        script_dir (str): The directory where this script is located.
+
+    Returns:
+        tuple: A tuple containing paths to the main, modules, routes, and docs directories.
+    """
     main_dir = os.path.join(script_dir, '..', 'main')
     modules_dir = os.path.join(script_dir, '..', 'modules')
     routes_dir = os.path.join(script_dir, '..', 'routes')
@@ -19,6 +36,14 @@ def setup_directories(script_dir):
 
 
 def create_conf_py(main_dir, modules_dir, routes_dir, docs_dir):
+    """Creates a `conf.py` file for Sphinx in the docs directory.
+
+    Args:
+        main_dir (str): Path to the main directory.
+        modules_dir (str): Path to the modules directory.
+        routes_dir (str): Path to the routes directory.
+        docs_dir (str): Path to the docs directory.
+    """
     conf_py_path = os.path.join(docs_dir, 'conf.py')
     conf_py_content = (
         "# Configuration file for the Sphinx documentation builder.\n"
@@ -44,6 +69,11 @@ def create_conf_py(main_dir, modules_dir, routes_dir, docs_dir):
 
 
 def generate_autoapi_toc_entries(docs_dir):
+    """Generates table of contents entries for AutoAPI.
+
+    Args:
+        docs_dir (str): Path to the docs directory.
+    """
     with open(os.path.join(docs_dir, 'index.rst'), 'w') as index_rst:
         index_rst.write(
             "Welcome to AmethystKey - CRYSTAL Secret Management's documentation!\n"
@@ -67,6 +97,11 @@ def generate_autoapi_toc_entries(docs_dir):
 
 
 def run_sphinx_build(docs_dir):
+    """Runs the Sphinx build process.
+
+    Args:
+        docs_dir (str): Path to the docs directory.
+    """
     build_dir = os.path.join(docs_dir, '_build')
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
@@ -75,6 +110,7 @@ def run_sphinx_build(docs_dir):
 
 
 def generate_documentation():
+    """Main function to generate the project documentation."""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         main_dir, modules_dir, routes_dir, docs_dir = setup_directories(script_dir)

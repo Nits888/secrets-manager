@@ -1,3 +1,10 @@
+"""
+cry_generate_secret.py
+----------------------
+
+Module for generating random secret and storing them in a specified bucket.
+"""
+
 import logging
 from flask import g
 from http import HTTPStatus

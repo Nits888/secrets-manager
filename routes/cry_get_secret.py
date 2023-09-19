@@ -1,8 +1,16 @@
+"""
+cry_get_secret.py
+-----------------
+
+Module for retrieving a stored secret based on the specified bucket and secret name.
+"""
+
+import json
+import jwt
 from flask import g
 from flask_restx import Namespace, Resource
 from http import HTTPStatus
 import logging
-
 from globals import auth_parser, LOG_LEVEL
 from modules import cry_secrets_management
 from modules.cry_auth import auth
@@ -58,6 +66,26 @@ class GetSecret(Resource):
             logging.info(f"Successfully fetched secret for '{secret_name}' from bucket '{bucket}'.")
             return {'secret': secret}, HTTPStatus.OK
 
+        except jwt.ExpiredSignatureError:
+            logging.error("Token validation failed: Token has expired.")
+            return {'error': 'Token has expired.'}, HTTPStatus.UNAUTHORIZED
+
+        except jwt.DecodeError:
+            logging.error("Token validation failed: Invalid token.")
+            return {'error': 'Invalid token format.'}, HTTPStatus.BAD_REQUEST
+
+        except jwt.InvalidTokenError:
+            logging.error("Token validation failed: Invalid token.")
+            return {'error': 'Invalid token.'}, HTTPStatus.UNAUTHORIZED
+
         except Exception as e:
-            logging.error(f"Error encountered while fetching secret: {str(e)}")
-            return {'error': 'Internal server error'}, HTTPStatus.INTERNAL_SERVER_ERROR
+            # Log the type of exception and its message
+            logging.error(f"Unexpected error of type {type(e).__name__} encountered: {str(e)}")
+
+            # Check if the error message is JSON serializable
+            try:
+                json.dumps({'error': str(e)})
+            except TypeError:
+                return {'error': 'An unexpected error occurred.'}, HTTPStatus.INTERNAL_SERVER_ERROR
+
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR

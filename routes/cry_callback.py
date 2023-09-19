@@ -1,3 +1,10 @@
+"""
+cry_callback.py
+---------------
+This module provides a Flask route that handles the callback from Keycloak after user authentication.
+It's responsible for exchanging the authorization code for an access token and storing the token in the session.
+"""
+
 import logging
 
 from flask import request, url_for, redirect, session, jsonify
@@ -15,20 +22,23 @@ class KeycloakCallback(Resource):
     """
     Keycloak Callback Resource
     --------------------------
-
-    ...
-
+    This resource handles the callback from Keycloak after user authentication.
+    It exchanges the authorization code for an access token and stores the token in the session.
     """
 
     @staticmethod
     def get():
         """
-        Handle the GET request from Keycloak's redirect.
+        Handle the GET request from Keycloak redirect.
+
+        This method retrieves the authorization code from the query parameters,
+        exchanges it for an access token, and stores the token in the session.
 
         Returns
         -------
         Response
             Redirects to the home route after successfully storing the access token in the session.
+            In case of errors, it returns a JSON response with an error message.
         """
 
         try:

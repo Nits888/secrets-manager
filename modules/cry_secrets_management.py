@@ -1,10 +1,19 @@
+"""
+cry_secrets_management
+~~~~~~~~~~~~~~~~~~~~~~
+
+This module provides utilities for managing secrets within the application.
+It includes functions to create, retrieve, update, and delete secrets, as well as manage secret buckets.
+
+"""
+
 import base64
 import json
 import os
 import uuid
 import logging
 
-from globals import bucket_cache, SECRETS_DIR, SECRET_KEY_FILE, server_env
+from globals import bucket_cache, SECRETS_DIR, SECRET_KEY_FILE, server_env, KEY_SALT_DELIMITER
 from modules import cry_database
 from modules import cry_encryption
 from modules import cry_utils
@@ -34,7 +43,7 @@ def _read_key_salt_from_file(bucket, app_name):
 
     with open(secret_master_key_path, 'rb') as key_salt_file:
         combined_key_salt = key_salt_file.read().decode('utf-8')
-        key_str, salt_str = combined_key_salt.split('$')  # Assuming '$' is the delimiter
+        key_str, salt_str = combined_key_salt.split(KEY_SALT_DELIMITER)  # Using constant as delimiter
         key = base64.b64decode(key_str.encode('utf-8'))
         salt = base64.b64decode(salt_str.encode('utf-8'))
 
@@ -64,7 +73,7 @@ def create_bucket(bucket, app_name):
         salt_str = base64.b64encode(salt).decode('utf-8')
 
         # Combine key and salt
-        combined_key_salt = f"{key_str}${salt_str}"  # Using '$' as delimiter for this example.
+        combined_key_salt = f"{key_str}{KEY_SALT_DELIMITER}{salt_str}"
 
         try:
             cry_database.backup_keys(bucket, combined_key_salt, client_id, app_name)
@@ -179,8 +188,13 @@ def get_bucket_config(bucket_name, app_name):
     for root, dirs, files in os.walk(config_dir):
         if f"{bucket_name}.json" in files:
             config_path = os.path.join(root, f"{bucket_name}.json")
-            with open(config_path, 'r') as config_file:
-                config = json.load(config_file)
-            return config
+            try:
+                with open(config_path, 'r') as config_file:
+                    config = json.load(config_file)
+                return config
+            except Exception as e:
+                logging.error(f"Error reading or parsing config file {config_path}: {str(e)}")
+                return None
 
     return None
+

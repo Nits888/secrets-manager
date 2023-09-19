@@ -1,3 +1,13 @@
+"""
+cry_initialize
+~~~~~~~~~~~~~~
+
+This module provides utilities for initializing the core components of the application.
+It includes functions to set up the database, create necessary directories, handle encryption keys,
+and populate caches.
+
+"""
+
 import logging
 import os
 import uuid
@@ -10,9 +20,9 @@ logging.basicConfig(level=LOG_LEVEL)
 
 
 def initialize_app():
-    """
-    Initialize the core components of the application.
+    """Initialize the core components of the application.
 
+    This function performs the following tasks:
     - Set up the database connection and tables.
     - Create necessary directories for secrets.
     - Initialize the database connection pool.
@@ -27,15 +37,14 @@ def initialize_app():
 
 
 def _create_directory_if_not_exists(directory_path, log_message=None):
-    """
-    Create a directory if it doesn't exist.
+    """Create a directory if it doesn't exist.
 
-    Parameters:
-    - directory_path (str): Path of the directory to check/create.
-    - log_message (str, optional): Message to log if the directory is missing. Default is None.
+    Args:
+        directory_path (str): Path of the directory to check/create.
+        log_message (str, optional): Message to log if the directory is missing. Defaults to None.
 
     Returns:
-    str: The path of the directory.
+        str: The path of the directory.
     """
     if not os.path.exists(directory_path):
         if log_message:
@@ -170,11 +179,10 @@ def refresh_bucket_cache():
 
 
 def initialize_bucket_cache():
-    """
-    Populate a cache of bucket details fetched from the database.
+    """Populate a cache of bucket details fetched from the database.
 
     Returns:
-    dict: A dictionary with bucket names as keys and their details (client_id and client_secret) as values.
+        dict: A dictionary with bucket names as keys and their details (client_id and client_secret) as values.
     """
     all_buckets = cry_database.get_all_buckets()
     # bucket_cache = {}

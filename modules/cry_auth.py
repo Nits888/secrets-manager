@@ -1,3 +1,13 @@
+"""
+cry_auth
+~~~~~~~~
+
+This module provides authentication mechanisms for the application using JWT tokens.
+It uses Flask's HTTPTokenAuth for token-based authentication and verifies tokens
+against the provided SECRET_KEY and cached credentials.
+
+"""
+
 import logging
 import jwt
 from flask import request, jsonify, g
@@ -14,16 +24,18 @@ auth = HTTPTokenAuth(scheme='Bearer')
 
 @auth.verify_token
 def verify_token(token):
-    """
-    Verifies the provided JWT token.
+    """Verifies the provided JWT token.
+
     Args:
-    - token (str): The JWT token from the incoming request.
+        token (str): The JWT token from the incoming request.
+
     Returns:
-    - bool: True if token validation is successful, otherwise False.
-    - str: A message providing details about the validation result.
+        tuple: A tuple containing:
+            - bool: True if token validation is successful, otherwise False.
+            - str: A message providing details about the validation result.
     """
     # Check if the request is for the home route
-    if request.endpoint == 'home':
+    if request.endpoint == 'crystal-secrets-manager_home':
         return cry_auth_helpers.verify_sso_token(token)
     try:
         # Decode the token using the SECRET_KEY
@@ -61,4 +73,12 @@ def verify_token(token):
 
 @auth.error_handler
 def auth_error(status):
+    """Handles authentication errors.
+
+    Args:
+        status (int): The HTTP status code.
+
+    Returns:
+        Response: A Flask response object with a JSON payload indicating the error.
+    """
     return jsonify({'error': 'Authentication failed', 'status': status}), 401

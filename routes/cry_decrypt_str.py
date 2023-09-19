@@ -1,7 +1,13 @@
+"""
+cry_decrypt_string.py
+---------------------
+
+Module for decrypting encrypted strings using a provided salt.
+"""
+
 from http import HTTPStatus
 from flask_restx import Namespace, Resource, fields
-from globals import auth_parser, LOG_LEVEL
-from modules.cry_auth import auth
+from globals import LOG_LEVEL
 from modules import cry_encryption
 import logging
 
@@ -26,7 +32,6 @@ class DecryptString(Resource):
 
     # @auth.login_required
     @ns.expect(decrypt_model, validate=True)
-    # @ns.doc(security='apikey')
     @ns.doc(responses={
         HTTPStatus.OK: 'String decrypted successfully.',
         # HTTPStatus.BAD_REQUEST: 'Invalid data provided.',
@@ -35,8 +40,14 @@ class DecryptString(Resource):
     })
     def post(self):
         """
-        Post endpoint.
-        Decrypts the provided text string using the provided salt and returns the decrypted value.
+        Decrypts the provided text string using the provided salt.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the decrypted text or an error message.
+        int
+            An HTTP status code.
         """
 
         # Check if the text and salt to be decrypted have been provided

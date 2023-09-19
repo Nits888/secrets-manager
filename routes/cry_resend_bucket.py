@@ -1,3 +1,10 @@
+"""
+cry_resend_bucket.py
+--------------------
+
+Module for managing the resending of bucket details in the Secrets Management Service.
+"""
+
 import logging
 from http import HTTPStatus
 
@@ -107,7 +114,9 @@ def resend_bucket_details(bucket_name, app_name):
 
 @ns.route('/')
 class ResendBucketDetailsResource(Resource):
-
+    """
+    Resource for resending bucket details.
+    """
     @ns.expect(bucket_model, validate=True)
     @ns.doc(
         responses={
@@ -147,4 +156,3 @@ class ResendBucketDetailsResource(Resource):
         except Exception as e:
             logging.error(f"Error resending bucket details: {str(e)}")
             return {'error': 'Internal server error'}, HTTPStatus.INTERNAL_SERVER_ERROR
-

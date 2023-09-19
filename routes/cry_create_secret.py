@@ -1,3 +1,10 @@
+"""
+cry_create_secret.py
+--------------------
+
+Module for creating a new secret in the secrets management system.
+"""
+
 from flask import g
 from flask_restx import Namespace, Resource, fields
 from http import HTTPStatus

@@ -44,6 +44,9 @@ keycloak_openid = KeycloakOpenID(
     client_secret_key=client_secret_key
 )
 
+# Constants
+KEY_SALT_DELIMITER = '$'
+
 # Global KEY
 # Fetch SECRET_KEY from environment variable CRY_INFO
 SECRET_KEY = os.environ.get("CRY_INFO", "UGFwcHVDYW50RGFuY2VTYWFsYUAyMDIwMzEjJCUK")

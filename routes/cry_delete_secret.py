@@ -1,3 +1,10 @@
+"""
+cry_delete_secret.py
+---------------------
+
+Module for deleting secrets based on a given bucket and secret name.
+"""
+
 import logging
 from flask import g
 from globals import LOG_LEVEL

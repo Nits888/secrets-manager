@@ -1,3 +1,10 @@
+"""
+cry_create_bucket.py
+--------------------
+
+Module for creating a new bucket in the secrets management system.
+"""
+
 import logging
 from http import HTTPStatus
 
@@ -29,7 +36,8 @@ def create_bucket(bucket_name, app_name):
         bucket_name (str): The name of the bucket to be created.
         app_name (str): Application Name for the Bucket.
 
-    :return: A response indicating the result of the bucket creation.
+    Returns:
+        tuple: A tuple containing a dictionary with the result message and an HTTP status code.
     """
     # Function implementation here
     success, client_id = cry_secrets_management.create_bucket(bucket_name, app_name)
