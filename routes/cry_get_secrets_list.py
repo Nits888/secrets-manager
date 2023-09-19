@@ -6,6 +6,7 @@ from flask_restx import Namespace, Resource
 from globals import LOG_LEVEL, auth_parser
 from modules import cry_secrets_management
 from modules.cry_auth import auth
+from modules.cry_auth_helpers import ip_whitelist_required
 
 logging.basicConfig(level=LOG_LEVEL)
 
@@ -27,6 +28,7 @@ class GetSecretList(Resource):
     @ns.response(HTTPStatus.NOT_FOUND, 'Bucket or secret not found.')
     @ns.response(HTTPStatus.UNAUTHORIZED, 'Unauthorized access.')
     @ns.response(HTTPStatus.INTERNAL_SERVER_ERROR, 'Internal server error encountered.')
+    @ip_whitelist_required  # Apply the IP whitelist decorator here
     def get(self, bucket, app_name):
         """
         GET method to retrieve the list of secrets for the specified bucket.

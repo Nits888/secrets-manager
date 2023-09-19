@@ -3,10 +3,9 @@ import datetime
 from flask_restx import Namespace, Resource, fields
 from http import HTTPStatus
 import logging
-from os import environ
 
 from modules.cry_auth import verify_token
-from globals import LOG_LEVEL, bucket_cache
+from globals import LOG_LEVEL, bucket_cache, SECRET_KEY
 import jwt
 
 ns = Namespace('authorize', description='Authorisation Route Namespace')
@@ -22,8 +21,6 @@ token_verify_model = ns.model('TokenVerify', {
 })
 
 logging.basicConfig(level=LOG_LEVEL)
-
-SECRET_KEY = environ.get("CRY_INFO", "ZGVmYXVsdF9mYWxsYmFja192YWx1ZQo=")
 
 
 @ns.route('/')
