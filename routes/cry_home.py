@@ -47,6 +47,20 @@ class Home(Resource):
                 login_required = True
             except Exception as e:
                 logging.warning(f"Failed to decode user info from token: {str(e)}")
+                # Attempt to refresh the token if a refresh token exists in the session
+    refresh_token_from_session = session.get('refresh_token')
+    if refresh_token_from_session:
+        new_access_token = refresh_token(refresh_token_from_session)
+        if new_access_token:
+            try:
+                user_info = keycloak_openid.decode_token(new_access_token)
+                user_name = user_info.get('name', "Stranger")
+                refreshed_successfully = True
+            except Exception as decode_error:
+                logging.warning(f"Failed to decode user info from refreshed token: {str(decode_error)}")
+
+    if not refreshed_successfully:
+        login_required = True
         else:
             try:
                 auth_url = keycloak_openid.auth_url(
