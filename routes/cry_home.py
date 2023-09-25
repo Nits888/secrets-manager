@@ -33,7 +33,9 @@ class Home(Resource):
         login_required = False  # Flag to determine if login is required
 
         access_token = session.get('access_token')
-        auth_url = None
+        
+        auth_url = None  # Initialize auth_url
+        
         logout_redirect_endpoint = 'crystal-secrets-manager_home'
         logout_url = (f"{server_url}/auth/realms/{realm_name}/protocol/openid-connect/logout?redirect_uri="
                       f"{url_for(logout_redirect_endpoint, _external=True)}")
@@ -48,27 +50,31 @@ class Home(Resource):
             except Exception as e:
                 logging.warning(f"Failed to decode user info from token: {str(e)}")
                 # Attempt to refresh the token if a refresh token exists in the session
-    refresh_token_from_session = session.get('refresh_token')
-    if refresh_token_from_session:
-        new_access_token = refresh_token(refresh_token_from_session)
-        if new_access_token:
-            try:
-                user_info = keycloak_openid.decode_token(new_access_token)
-                user_name = user_info.get('name', "Stranger")
-                refreshed_successfully = True
-            except Exception as decode_error:
-                logging.warning(f"Failed to decode user info from refreshed token: {str(decode_error)}")
-
-    if not refreshed_successfully:
-        login_required = True
+                refresh_token_from_session = session.get('refresh_token')
+                if refresh_token_from_session:
+                    new_access_token = refresh_token(refresh_token_from_session)
+                    if new_access_token:
+                        try:
+                            user_info = keycloak_openid.decode_token(new_access_token)
+                            user_name = user_info.get('name', "Stranger")
+                            refreshed_successfully = True
+                        except Exception as decode_error:
+                            logging.warning(f"Failed to decode user info from refreshed token: {str(decode_error)}")
+                    else:
+                        # If refreshing the token failed, set auth_url and login_required
+                        logging.warning("Token refresh failed. Triggering login.")
+                        auth_url = keycloak_openid.auth_url(redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
+                        login_required = True
+                else:
+                    # If there's no refresh token, set auth_url and login_required
+                    logging.warning("No refresh token found. Triggering login.")
+                    auth_url = keycloak_openid.auth_url(redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
+                    login_required = True
         else:
-            try:
-                auth_url = keycloak_openid.auth_url(
-                    redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
-                login_required = True
-            except keycloak.exceptions.KeycloakConnectionError:
-                logging.error("Failed to connect to Keycloak server. Rendering page with default user.")
-                login_required = True
+            # If there's no access token, set auth_url and login_required
+            logging.warning("No access token found. Triggering login.")
+            auth_url = keycloak_openid.auth_url(redirect_uri=url_for('keycloak_callback_keycloak_callback', _external=True))
+            login_required = True
 
         try:
             bucket_pairs = cry_secrets_management.get_buckets()
